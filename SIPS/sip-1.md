@@ -57,7 +57,7 @@ Once the idea has been vetted, your next responsibility will be to present (by m
 
 For Core SIPs, given that they require client implementations to be considered **Final** (see "SIP Process" below), you will need to either provide an implementation for the Sila clients or convince client maintainers to implement your SIP.
 
-The SIP editors decide which Core SIPs are included in a network upgrade, based on technical soundness, the readiness of client implementations, and the discussion on [Sila Magicians](https://sila-magicians.discourse.group/c/sips/5). An SIP that is contentious enough to risk a network split should not be included in a network upgrade.
+SILA Network, as the project steward (see [SIP Governance](#sip-governance)), decides which Core SIPs are included in a network upgrade, based on technical soundness, the readiness of client implementations, and the discussion on [Sila Magicians](https://sila-magicians.discourse.group/c/sips/5). An SIP that is contentious enough to risk a network split should not be included in a network upgrade.
 
 If you are shepherding an SIP, you can make the process of building community consensus easier by making sure that [the Sila Magicians forum](https://sila-magicians.discourse.group/c/sips/5) thread for your SIP includes or links to as much of the community discussion as possible and that various stakeholders are well-represented.
 
@@ -83,9 +83,9 @@ If this period results in necessary normative changes it will revert the SIP to 
 
 A PR moving an SIP from Last Call to Final SHOULD contain no changes other than the status update. Any content or editorial proposed change SHOULD be separate from this status-updating PR and committed prior to it.
 
-**Stagnant** - Any SIP in `Draft` or `Review` or `Last Call` if inactive for a period of 6 months or greater is moved to `Stagnant`. An SIP may be resurrected from this state by Authors or SIP Editors through moving it back to `Draft` or its earlier status. If not resurrected, a proposal may stay forever in this status.
+**Stagnant** - Any SIP in `Draft` or `Review` or `Last Call` if inactive for a period of 6 months or greater is moved to `Stagnant` by an SIP Editor. An SIP may be resurrected from this state by Authors or SIP Editors through moving it back to `Draft` or its earlier status. If not resurrected, a proposal may stay forever in this status.
 
->*SIP Authors are notified of any algorithmic change to the status of their SIP*
+>*SIP Editors notify SIP Authors of any change to the status of their SIP that the authors did not make*
 
 **Withdrawn** - The SIP Author(s) have withdrawn the proposed SIP. This state has finality and can no longer be resurrected using this SIP number. If the idea is pursued at a later date, it is considered a new proposal.
 
@@ -98,7 +98,7 @@ Each SIP should have the following parts:
 - Preamble - RFC 822 style headers containing metadata about the SIP, including the SIP number, a short descriptive title (limited to a maximum of 44 characters), a description (limited to a maximum of 140 characters), and the author details. Irrespective of the category, the title and description should not include SIP number. See [below](./sip-1.md#sip-header-preamble) for details.
 - Abstract - Abstract is a multi-sentence (short paragraph) technical summary. This should be a very terse and human-readable version of the specification section. Someone should be able to read only the abstract to get the gist of what this specification does.
 - Motivation *(optional)* - A motivation section is critical for SIPs that want to change the Sila protocol. It should clearly explain why the existing protocol specification is inadequate to address the problem that the SIP solves. This section may be omitted if the motivation is evident.
-- Specification - The technical specification should describe the syntax and semantics of any new feature. The specification should be detailed enough to allow competing, interoperable implementations for any of the current Sila platforms (go-sila, sila-besu, sila-erigon, sila-nethermind, sila-rsil, silajs, or others).
+- Specification - The technical specification should describe the syntax and semantics of any new feature. The specification should be detailed enough to allow competing, interoperable implementations for any of the current Sila client implementations.
 - Rationale - The rationale fleshes out the specification by describing what motivated the design and why particular design decisions were made. It should describe alternate designs that were considered and related work, e.g., how the feature is supported in other languages. The rationale should discuss important objections or concerns raised during the discussion around the SIP.
 - Backwards Compatibility *(optional)* - All SIPs that introduce backwards incompatibilities must include a section describing these incompatibilities and their consequences. The SIP must explain how the author proposes to deal with these incompatibilities. This section may be omitted if the proposal does not introduce any backward incompatibilities, but this section must be included if backward incompatibilities exist.
 - Test Cases *(optional)* - Test cases for an implementation are mandatory for SIPs that are affecting consensus changes. Tests should either be inlined in the SIP as data (such as input/expected output pairs) or included in `../assets/sip-###/<filename>`. This section may be omitted for non-Core proposals.
@@ -108,11 +108,11 @@ Each SIP should have the following parts:
 
 ## SIP Formats and Templates
 
-SIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. There is a [template](https://github.com/sila-network/SIPs/blob/main/sip-template.md) to follow.
+SIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. There is a [template](../sip-template.md) to follow.
 
 ## SIP Header Preamble
 
-Each SIP must begin with an [RFC 822](https://www.ietf.org/rfc/rfc822.txt) style header preamble, preceded and followed by three hyphens (`---`). This header is also termed ["front matter" by Jekyll](https://jekyllrb.com/docs/front-matter/). The headers must appear in the following order.
+Each SIP must begin with an [RFC 822](https://www.rfc-editor.org/rfc/rfc822) style header preamble, preceded and followed by three hyphens (`---`). This header is also termed ["front matter" by Jekyll](https://jekyllrb.com/docs/front-matter/). The headers must appear in the following order.
 
 `sip`: *SIP number*
 
@@ -410,7 +410,7 @@ This is a sentence with a footnote.[^1]
 Which renders to:
 
 <!-- markdownlint-capture -->
-<!-- markdownlint-disable code-block-style -->
+<!-- markdownlint-disable code-block-style blanks-around-fences -->
 
 This is a sentence with a footnote.[^1]
 
@@ -497,13 +497,23 @@ It occasionally becomes necessary to transfer ownership of SIPs to a new champio
 
 If you are interested in assuming ownership of an SIP, send a message asking to take over, addressed to both the original author and the SIP editor. If the original author doesn't respond to the email in a timely manner, the SIP editor will make a unilateral decision (it's not like such decisions can't be reversed :)).
 
+## SIP Governance
+
+SILA Network (@sila-chain) is the steward of the SIP process. As steward, SILA Network:
+
+- Maintains this repository and the SIP process described in this document;
+- Appoints and removes SIP editors, through a Meta SIP;
+- Decides which Core SIPs are included in a network upgrade.
+
+Decisions are made in public: every change to an SIP is made through a pull request to this repository, and proposals are discussed in [the SIPs category of Sila Magicians](https://sila-magicians.discourse.group/c/sips/5) before they are merged. Being steward of the process does not make SILA Network the author of an SIP; authorship belongs to the people listed in each SIP's `author` header.
+
 ## SIP Editors
 
 The current SIP editors are
 
 - SILA Network (@sila-chain)
 
-Changes to the list of SIP editors are made through a Meta SIP.
+The list of SIP editors is also kept in [`config/sip-editors.yml`](../config/sip-editors.yml). Changes to the list of SIP editors are made through a Meta SIP.
 
 ## SIP Editor Responsibilities
 
@@ -549,7 +559,7 @@ When referring to an SIP with a `category` of `SRC`, it must be written in the h
 
 ### RFC 2119 and RFC 8174
 
-SIPs are encouraged to follow [RFC 2119](https://www.ietf.org/rfc/rfc2119.html) and [RFC 8174](https://www.ietf.org/rfc/rfc8174.html) for terminology and to insert the following at the beginning of the Specification section:
+SIPs are encouraged to follow [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174) for terminology and to insert the following at the beginning of the Specification section:
 
 > The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
 

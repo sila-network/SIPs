@@ -1,6 +1,7 @@
-<p align="center"><img src="./assets/sila-logo.png" alt="Sila" width="160"></p>
-
 # Sila Improvement Proposals (SIPs)
+
+<!-- markdownlint-disable-next-line MD033 -->
+<p align="center"><img src="./assets/sila-logo.png" alt="Sila" width="160"></p>
 
 The goal of the SIP project is to standardize and provide high-quality documentation for Sila itself and conventions built upon it. This repository tracks past and ongoing improvements to Sila in the form of Sila Improvement Proposals (SIPs). [SIP-1](./SIPS/sip-1.md) governs how SIPs are published.
 
@@ -25,6 +26,7 @@ Please note that this repository is for documenting standards and not for help i
 | [`assets/`](./assets) | Images, diagrams and auxiliary files, in `assets/sip-N/` |
 | [`sip-template.md`](./sip-template.md) | Template for new SIPs |
 | [`config/sip-editors.yml`](./config/sip-editors.yml) | SIP editors per category |
+| [`config/sipw.toml`](./config/sipw.toml) | `sipw` validation rules |
 | [`LICENSE.md`](./LICENSE.md) | CC0 1.0 Universal |
 
 ## Preferred Citation Format
@@ -35,7 +37,15 @@ Consider any document not published at <https://sips.silachain.org/> as a workin
 
 ## Validation
 
-SIP-1 rules are enforced using [`sipw`](https://github.com/sila-chain/sipw), the Sila Improvement Proposal linter.
+SIPs are validated against the rules of SIP-1 with [`sipw`](https://github.com/sila-chain/sipw), the Sila Improvement Proposal linter, using the configuration in [`config/sipw.toml`](./config/sipw.toml). SIP-1 is a process document and is not checked by `sipw`.
+
+To validate an SIP locally, build `sipw` from source and run it from the root of this repository:
+
+```sh
+git clone --recurse-submodules https://github.com/sila-chain/sipw
+cargo build --release --manifest-path sipw/Cargo.toml
+sipw/target/release/sipw --config ./config/sipw.toml SIPS/sip-N.md
+```
 
 ## License
 
