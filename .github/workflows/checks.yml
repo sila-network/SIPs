@@ -1,0 +1,33 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    env:
+      SIPW_COMMIT: 94403b5bbe2420fd80176663d5918c357e2a0554
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build sipw
+        run: |
+          git clone https://github.com/sila-chain/sipw "$RUNNER_TEMP/sipw"
+          git -C "$RUNNER_TEMP/sipw" checkout "$SIPW_COMMIT"
+          git -C "$RUNNER_TEMP/sipw" submodule update --init --depth 1
+          cargo build --release --manifest-path "$RUNNER_TEMP/sipw/Cargo.toml"
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y codespell python3-yaml
+
+      - name: Run checks
+        run: SIPW="$RUNNER_TEMP/sipw/target/release/sipw" tests/run.sh

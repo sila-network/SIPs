@@ -27,6 +27,8 @@ Please note that this repository is for documenting standards and not for help i
 | [`sip-template.md`](./sip-template.md) | Template for new SIPs |
 | [`config/sip-editors.yml`](./config/sip-editors.yml) | SIP editors per category |
 | [`config/sipw.toml`](./config/sipw.toml) | `sipw` validation rules |
+| [`tests/`](./tests) | Repository checks, run with `tests/run.sh` |
+| [`audit/AUDIT.md`](./audit/AUDIT.md) | Audit report and open blockers |
 | [`LICENSE.md`](./LICENSE.md) | CC0 1.0 Universal |
 
 ## Preferred Citation Format

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Runs every check for this repository and prints a final verdict.
+#
+# Checks that fail mark the run FAILED. Open blockers (problems that cannot be
+# fixed inside this repository) mark it BLOCKED. Only a run with neither prints
+# "RESULT: PASS (100/100)".
+#
+# Requirements: node (npx), python3 >= 3.11 with PyYAML, codespell, curl, git,
+# and sipw (set SIPW to its path, or have it on PATH).
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SIPW="${SIPW:-sipw}"
+UPSTREAM_COMMIT="f1ade090fd315895461fc3e249cb1a675aeb55a9"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+cd "$ROOT"
+
+failed=0
+blockers=0
+pass() { echo "PASS     $1"; }
+fail() { echo "FAIL     $1"; failed=$((failed + 1)); }
+blocker() { echo "BLOCKER  $1"; blockers=$((blockers + 1)); }
+section() { echo; echo "== $1"; }
+
+section "1. markdownlint (config/.markdownlint.yaml)"
+cp config/.markdownlint.yaml "$WORK/sila.markdownlint.yaml"
+if npx -y markdownlint-cli2@0.18.1 --config "$WORK/sila.markdownlint.yaml" "**/*.md" 2>&1 | grep -v '^npm'; then
+  pass "markdownlint"
+else
+  fail "markdownlint"
+fi
+
+section "2. CodeSpell"
+if codespell --ignore-words config/.codespell-whitelist --skip '.git,*.png,*.svg,.codespell-whitelist' .; then
+  pass "codespell"
+else
+  fail "codespell"
+fi
+
+section "3. Config and asset syntax"
+python3 -c "import tomllib; tomllib.load(open('config/sipw.toml', 'rb'))" && pass "config/sipw.toml parses" || fail "config/sipw.toml parses"
+python3 -c "import yaml; d = yaml.safe_load(open('config/sip-editors.yml')); assert all(v == ['sila-chain'] for v in d.values()), d" \
+  && pass "config/sip-editors.yml parses and lists @sila-chain" || fail "config/sip-editors.yml"
+python3 -c "import xml.dom.minidom as m; m.parse('assets/sip-1/sip-process.svg')" && pass "assets/sip-1/sip-process.svg is well-formed" || fail "sip-process.svg"
+
+section "4. sipw: a proposal built from the template passes"
+mkdir -p "$WORK/repo/SIPS"
+cp LICENSE.md "$WORK/repo/"
+cp SIPS/sip-1.md tests/fixtures/sip-9999.md tests/fixtures/sip-9998.md "$WORK/repo/SIPS/"
+if (cd "$WORK/repo" && "$SIPW" --config "$ROOT/config/sipw.toml" SIPS/sip-9999.md); then
+  pass "sipw accepts tests/fixtures/sip-9999.md"
+else
+  fail "sipw accepts tests/fixtures/sip-9999.md"
+fi
+
+section "5. sipw: a proposal with three deliberate errors is rejected"
+negative="$(cd "$WORK/repo" && "$SIPW" --config "$ROOT/config/sipw.toml" SIPS/sip-9998.md 2>&1)"
+echo "$negative" | grep -E '^error|validation'
+found="$(echo "$negative" | grep -oE '^error\[[a-z-]+\]' | sort | tr '\n' ' ')"
+expected="error[markdown-rel-links] error[preamble-enum-category] error[preamble-re-discussions-to] "
+[ "$found" = "$expected" ] && pass "sipw rejects exactly the three planted errors" || fail "sipw negative test (got: $found)"
+
+section "6. Links"
+python3 tests/check_links.py && pass "all links resolve" || fail "broken links"
+
+section "7. Parity with the upstream process document (commit $UPSTREAM_COMMIT)"
+up="https://raw.githubusercontent.com/ethereum/EIPs/$UPSTREAM_COMMIT"
+curl -sSfL -m 30 "$up/EIPS/eip-1.md" -o "$WORK/up-1.md" && curl -sSfL -m 30 "$up/eip-template.md" -o "$WORK/up-template.md" || fail "download upstream"
+norm() { grep -E '^#{2,3} ' "$1" | sed -E 's/EIP|ERC|SIP|SRC/X/g; s/Ethereum |Sila //g; s/Execution Client Specifications/Execution Layer Specifications/'; }
+diff <(norm "$WORK/up-1.md") <(norm SIPS/sip-1.md) > "$WORK/headings.diff"
+cat > "$WORK/headings.expected" <<'EOF'
+20d19
+< ### System Contract Implementations
+30d28
+< ### Yellow Paper
+36a35
+> ## X Governance
+44d42
+< ## History
+EOF
+diff -q "$WORK/headings.diff" "$WORK/headings.expected" > /dev/null \
+  && pass "SIP-1 sections match upstream except the documented changes (see audit/AUDIT.md)" \
+  || { cat "$WORK/headings.diff"; fail "SIP-1 section parity"; }
+for s in Idea Draft Review 'Last Call' Final Stagnant Withdrawn Living; do
+  [ "$(grep -c "\*\*$s\*\*" "$WORK/up-1.md")" = "$(grep -c "\*\*$s\*\*" SIPS/sip-1.md)" ] || fail "status $s"
+done && pass "all 8 statuses present"
+diff <(grep -oE '^`[a-z-]+`:' "$WORK/up-1.md" | sed 's/eip/X/') <(grep -oE '^`[a-z-]+`:' SIPS/sip-1.md | sed 's/sip/X/') \
+  && pass "preamble headers identical" || fail "preamble headers"
+diff <(grep -E '^##' "$WORK/up-template.md") <(grep -E '^##' sip-template.md) \
+  && pass "template sections identical" || fail "template sections"
+
+section "8. Pure Sila identity scan (tracked text files, excluding tests/ and audit/, which name what they test for)"
+pattern='\b(ethereum|eips?|ercs?|evm|eth|geth|go-ethereum|besu|erigon|nethermind|reth|ethresear\.ch|vitalik|buterin|openai|chatgpt)\b|\b(eip|erc)-[0-9]+|sila\.org|sila\.github\.io|sila-magicians\.org|stackexchange'
+hits="$(git ls-files | grep -vE '^(tests|audit)/|\.png$' | xargs grep -nPi "$pattern" || true)"
+[ -z "$hits" ] && pass "no foreign identity in text files" || { echo "$hits"; fail "foreign identity in text files"; }
+
+section "9. Open blockers outside this repository"
+if strings -n 5 assets/sila-logo.png | grep -iE 'openai|gpt-image' > /dev/null; then
+  blocker "assets/sila-logo.png carries a C2PA manifest signed by a third-party image generator (needs owner decision)"
+fi
+site="$(curl -sSL -m 30 https://sips.silachain.org/SIPS/sip-1 || true)"
+if echo "$site" | grep -iE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\.org' > /dev/null; then
+  blocker "https://sips.silachain.org/SIPS/sip-1 serves another repository's SIP-1 with foreign names, not this repository"
+fi
+if [ ! -f _config.yml ]; then
+  blocker "no site build in this repository: the status page cannot be built or checked from here"
+fi
+echo "INFO     SIP documents in this repository: $(ls SIPS | grep -cE '^sip-[0-9]+\.md$')"
+
+echo
+echo "failed checks: $failed, open blockers: $blockers"
+if [ "$failed" -gt 0 ]; then
+  echo "RESULT: FAILED"; exit 1
+elif [ "$blockers" -gt 0 ]; then
+  echo "RESULT: BLOCKED (not 100/100)"; exit 2
+fi
+echo "RESULT: PASS (100/100)"
