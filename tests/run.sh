@@ -33,7 +33,7 @@ else
 fi
 
 section "2. CodeSpell"
-if codespell --ignore-words config/.codespell-whitelist --skip '.git,*.png,*.svg,.codespell-whitelist,tests/fixtures/sila-denied-identities.json' .; then
+if codespell --ignore-words config/.codespell-whitelist --skip '.git,*.png,*.svg,.codespell-whitelist' .; then
   pass "codespell"
 else
   fail "codespell"
