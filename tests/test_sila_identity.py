@@ -45,6 +45,16 @@ class SilaIdentityTests(unittest.TestCase):
         (self.root / ("er" + "c-20.md")).write_text("neutral")
         self.assertTrue(any(hit["kind"] == "path" for hit in audit(self.root)["term_hits"]))
 
+    def test_only_exact_negative_vocabulary_fixture_is_exempt(self):
+        fixture = self.root / "tests/fixtures/sila-denied-identities.json"
+        fixture.parent.mkdir(parents=True)
+        fixture.write_text("et" + "hereum")
+        self.assertEqual(audit(self.root)["counts"]["path_or_text_findings"], 0)
+        (self.root / "tests/fixtures/another-file.json").write_text(
+            "et" + "hereum"
+        )
+        self.assertGreater(audit(self.root)["counts"]["path_or_text_findings"], 0)
+
     def test_media_requires_positive_clearance(self):
         folder = self.root / "assets"
         folder.mkdir()

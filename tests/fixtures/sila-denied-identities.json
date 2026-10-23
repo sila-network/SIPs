@@ -1,0 +1,37 @@
+{
+  "DISALLOWED_WORDS": [
+    "ethereum",
+    "ether",
+    "bitcoin",
+    "solana",
+    "polygon",
+    "arbitrum",
+    "optimism",
+    "avalanche",
+    "binance",
+    "tron",
+    "sepolia",
+    "kovan",
+    "rinkeby",
+    "ropsten",
+    "holesky",
+    "metamask",
+    "etherscan",
+    "ethers"
+  ],
+  "DISALLOWED_PREFIXES": [
+    "eip",
+    "erc",
+    "evm"
+  ],
+  "DISALLOWED_RPC_PREFIX": [
+    "eth",
+    "evm"
+  ],
+  "DISALLOWED_TICKERS": [
+    "ETH",
+    "BTC",
+    "BNB",
+    "BSC"
+  ]
+}

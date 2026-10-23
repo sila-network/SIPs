@@ -14,19 +14,35 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-# Split audit-only prohibited search terms to avoid introducing their literal
-# spellings into Sila documents and repository source as if they were supported
-# API names or identities. No substitution or compatibility alias is provided.
-DISALLOWED_WORDS = (
-    "ethe" + "reum", "et" + "h" + "er", "bit" + "coin", "sol" + "ana",
-    "poly" + "gon", "arbi" + "trum", "opti" + "mism",
-    "ava" + "lanche", "bin" + "ance", "tr" + "on", "sepo" + "lia",
-    "ko" + "van", "rin" + "keby", "rop" + "sten", "ho" + "lesky",
-    "met" + "amask", "et" + "her" + "scan", "et" + "h" + "ers",
-)
-DISALLOWED_PREFIXES = ("ei" + "p", "er" + "c", "ev" + "m")
-DISALLOWED_RPC_PREFIX = ("et" + "h", "ev" + "m")
-DISALLOWED_TICKERS = ("E" + "TH", "B" + "TC", "B" + "NB", "B" + "SC")
+# Negative audit vocabulary is explicit fixture data, not a supported API,
+# operational namespace, or compatibility shim. The exact fixture is exempt
+# from scanning itself; all other source files remain subject to the audit.
+_DENYLIST_RELATIVE_PATH = "tests/fixtures/sila-denied-identities.json"
+
+
+def _load_denied_identities() -> dict[str, tuple[str, ...]]:
+    fixture = Path(__file__).resolve().parent.parent / _DENYLIST_RELATIVE_PATH
+    data = json.loads(fixture.read_text(encoding="utf-8"))
+    expected = {
+        "DISALLOWED_WORDS", "DISALLOWED_PREFIXES",
+        "DISALLOWED_RPC_PREFIX", "DISALLOWED_TICKERS",
+    }
+    if not isinstance(data, dict) or set(data) != expected:
+        raise ValueError("The Sila identity fixture has invalid keys")
+    for name in expected:
+        values = data[name]
+        if (not isinstance(values, list) or not values
+                or any(not isinstance(v, str) or not v for v in values)
+                or len(set(values)) != len(values)):
+            raise ValueError("The Sila identity fixture is missing valid terms: " + name)
+    return {key: tuple(data[key]) for key in expected}
+
+
+_DENIED = _load_denied_identities()
+DISALLOWED_WORDS = _DENIED["DISALLOWED_WORDS"]
+DISALLOWED_PREFIXES = _DENIED["DISALLOWED_PREFIXES"]
+DISALLOWED_RPC_PREFIX = _DENIED["DISALLOWED_RPC_PREFIX"]
+DISALLOWED_TICKERS = _DENIED["DISALLOWED_TICKERS"]
 TEXT_SUFFIXES = {
     ".md", ".markdown", ".html", ".xml", ".csv", ".txt",
     ".py", ".go", ".sol", ".rs", ".js", ".json", ".jsonl",
@@ -84,6 +100,10 @@ def audit(root: Path) -> dict:
         if not path.is_file() or ".git" in path.parts:
             continue
         relative = path.relative_to(root).as_posix()
+        # This one exact negative fixture contains the vocabulary to reject.
+        # It is not a protocol identity, and no other fixture is exempted.
+        if relative == _DENYLIST_RELATIVE_PATH:
+            continue
         for matched in BLOCK_PATTERN.finditer(relative):
             term_hits.append({"file": relative, "line": 0, "kind": "path", "match": matched.group(0)})
         suffix = path.suffix.lower()
