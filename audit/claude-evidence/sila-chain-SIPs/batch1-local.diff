@@ -1,0 +1,1521 @@
+diff --git a/.github/CONTRIBUTING.md b/.github/CONTRIBUTING.md
+index 90bae160..69f940c9 100644
+--- a/.github/CONTRIBUTING.md
++++ b/.github/CONTRIBUTING.md
+@@ -1,3 +1,3 @@
+-Please review [SIP-1](https://sips.sila.org/SIPS/sip-1) for SIP guidelines.
++Please review [SIP-1](https://sips.silachain.org/SIPS/sip-1) for SIP guidelines.
+ 
+ <!-- RATIONALE FOR THIS FILE: IT IS DISPLAYED WHEN YOU CREATE AN ISSUE OR MAKE A PR -->
+diff --git a/.github/ISSUE_TEMPLATE.md b/.github/ISSUE_TEMPLATE.md
+index 2c5dde90..ba7f5adb 100644
+--- a/.github/ISSUE_TEMPLATE.md
++++ b/.github/ISSUE_TEMPLATE.md
+@@ -1,8 +1,8 @@
+-ATTENTION! If you would like to submit an SIP and it has already been written as a draft (see the [template](https://github.com/sila-chain/SIPs/blob/master/sip-template.md) for an example), please submit it as a [Pull Request](https://github.com/sila-chain/SIPs/pulls).
++ATTENTION! If you would like to submit an SIP and it has already been written as a draft (see the [template](https://github.com/sila-chain/SIPs/blob/main/sip-template.md) for an example), please submit it as a [Pull Request](https://github.com/sila-chain/SIPs/pulls).
+ 
+ If you are considering a proposal but would like to get some feedback on the idea before submitting a draft, then continue opening an Issue as a thread for discussion.  Note that the more clearly and completely you state your idea the higher the quality of the feedback you are likely to receive.
+ 
+-Keep in mind the following guidelines from [SIP-1](https://sips.sila.org/SIPS/sip-1):
++Keep in mind the following guidelines from [SIP-1](https://sips.silachain.org/SIPS/sip-1):
+ 
+ > Each SIP must have a champion - someone who writes the SIP using the style and format described below, shepherds the discussions in the appropriate forums, and attempts to build community consensus around the idea. The SIP champion (a.k.a. Author) should first attempt to ascertain whether the idea is SIP-able. Posting to the Protocol Discussion forum or opening an Issue is the best way to go about this.
+ 
+diff --git a/.github/PULL_REQUEST_TEMPLATE.md b/.github/PULL_REQUEST_TEMPLATE.md
+index 7d7bb6f9..e3d7bbfa 100644
+--- a/.github/PULL_REQUEST_TEMPLATE.md
++++ b/.github/PULL_REQUEST_TEMPLATE.md
+@@ -2,7 +2,7 @@
+ 
+ --
+ 
+-When opening a pull request to submit a new SIP, please use the suggested template: https://github.com/sila-chain/SIPs/blob/master/sip-template.md
++When opening a pull request to submit a new SIP, please use the suggested template: https://github.com/sila-chain/SIPs/blob/main/sip-template.md
+ 
+ We have a GitHub bot that automatically merges some PRs. It will merge yours immediately if certain criteria are met:
+ 
+diff --git a/.github/instructions/review.instructions.md b/.github/instructions/review.instructions.md
+index 534e7225..2d1ec4a4 100644
+--- a/.github/instructions/review.instructions.md
++++ b/.github/instructions/review.instructions.md
+@@ -4,7 +4,7 @@
+ 
+ # Copilot Instructions for Reviewing SIP/SRC Pull Requests
+ 
+-You are an SIP editor reviewing pull requests to the `sila-chain/SIPs` and `sila-chain/SRCs` repositories. Your job is to enforce the rules defined in [SIP-1](https://sips.sila.org/SIPS/sip-1) and the editorial style guide. You do **not** judge the technical merit of proposals—only their formatting, structure, and compliance with the process.
++You are an SIP editor reviewing pull requests to the `sila-chain/SIPs` and `sila-chain/SRCs` repositories. Your job is to enforce the rules defined in [SIP-1](https://sips.silachain.org/SIPS/sip-1) and the editorial style guide. You do **not** judge the technical merit of proposals—only their formatting, structure, and compliance with the process.
+ 
+ ## Necessity
+ 
+@@ -58,7 +58,7 @@
+ 
+ - Remove the link and summarize relevant content in the SIP/SRC
+ - License/copyright permitting, copy the content into the `assets/...` directory
+-- Apply to have the resource allowed, following the rules in [SIP-5757](https://sips.sila.org/SIPS/sip-5757).
++- Apply to have the resource allowed, following the rules in [SIP-5757](https://sips.silachain.org/SIPS/sip-5757).
+ 
+ ## Auxiliary Files
+ 
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 82b4b772..9d3ade94 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -63,19 +63,7 @@
+       - name: HTML Proofer
+         run: bundle exec htmlproofer --allow-missing-href --disable-external --assume-extension '.html' --log-level=:info --cache='{"timeframe":{"external":"6w"}}' --checks 'Links,Images,Scripts,OpenGraph' --no-check-sri --ignore-empty-alt --no-enforce_https ./_site
+       - name: DNS Validator
+-        shell: bash
+-        run: |
+-          set -euo pipefail
+-          DOMAIN='sips.sila.org'
+-          if getent ahosts "$DOMAIN" >/dev/null 2>&1; then
+-            echo "CUSTOM_DOMAIN_DNS_STATUS=RESOLVING"
+-            bundle exec github-pages health-check
+-            echo "CUSTOM_DOMAIN_DNS_GATE=PASS"
+-          else
+-            echo "CUSTOM_DOMAIN_DNS_STATUS=UNCONFIGURED"
+-            echo "CUSTOM_DOMAIN_DNS_GATE=DEFERRED_EXTERNAL_INFRASTRUCTURE"
+-            echo "Custom-domain DNS is not a repository-content PR gate until the external DNS record exists."
+-          fi
++        run: bundle exec github-pages health-check
+ 
+   link-check:
+     name: Link Check
+@@ -102,45 +90,38 @@
+       - name: Checkout SIP Repository
+         uses: actions/checkout@47fbe2df0ad0e27efb67a70beac3555f192b062f
+ 
+-      - name: Resolve changed-file set
++      - name: Get Changed Files
+         id: changed
+         shell: bash
+         env:
+           GH_TOKEN: ${{ github.token }}
++          PR_NUMBER: ${{ github.event.number }}
+         run: |
+           set -euo pipefail
+-          PR_NUMBER="$(jq -r '.number' "$GITHUB_EVENT_PATH")"
+-          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" --jq '.[].filename' > /tmp/pr-files.txt
+-          COUNT="$(wc -l < /tmp/pr-files.txt | tr -d ' ')"
++          # The pull request files API lists at most 3000 files; fail rather than check a partial set.
++          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
++            --jq '.[] | select(.status != "removed") | .filename' > "$RUNNER_TEMP/pr-files.txt"
++          COUNT="$(wc -l < "$RUNNER_TEMP/pr-files.txt" | tr -d ' ')"
+           echo "CHANGED_FILE_COUNT=$COUNT"
+-          if [ "$COUNT" -gt 300 ] || [ "${GITHUB_HEAD_REF:-}" = "sila/sips-pure-identity-20260905" ] || [ "${GITHUB_HEAD_REF:-}" = "sila/sips-pure-identity-latest-20260907" ]; then
+-            echo "MEGA_SYNC=true" >> "$GITHUB_ENV"
+-          else
+-            echo "MEGA_SYNC=false" >> "$GITHUB_ENV"
+-            {
+-              echo "CHANGED_FILES<<EOF"
+-              sed -e 's|$|,|' /tmp/pr-files.txt
+-              echo "EOF"
+-            } >> "$GITHUB_ENV"
++          if [ "$COUNT" -ge 3000 ]; then
++            echo "::error::Pull request lists $COUNT files; the files API cannot enumerate the complete set."
++            exit 1
+           fi
++          {
++            echo "CHANGED_FILES<<EOF"
++            sed -e 's|$|,|' "$RUNNER_TEMP/pr-files.txt"
++            echo "EOF"
++          } >> "$GITHUB_ENV"
+ 
+-      - name: Run CodeSpell on normal PR delta
++      - name: Run CodeSpell
+         uses: codespell-project/actions-codespell@57beb9f38f49d773d641ac555d1565c3b6a59938
+-        if: env.MEGA_SYNC == 'false'
++        if: env.CHANGED_FILES != ''
+         with:
+           check_filenames: true
+           ignore_words_file: config/.codespell-whitelist
+           path: ${{ env.CHANGED_FILES }}
+           skip: .git,Gemfile.lock,**/*.png,**/*.gif,**/*.jpg,**/*.svg,**/*.pdf,.codespell-whitelist,vendor,_site,_config.yml,style.css
+ 
+-      - name: Run CodeSpell on CI controls for source mega-sync
+-        uses: codespell-project/actions-codespell@57beb9f38f49d773d641ac555d1565c3b6a59938
+-        if: env.MEGA_SYNC == 'true'
+-        with:
+-          check_filenames: true
+-          path: .github/workflows
+-          skip: .git,vendor,_site
+-
+   sipw-validator:
+     name: SIP Walidator
+     runs-on: ubuntu-latest
+@@ -148,249 +129,17 @@
+     steps:
+       - name: Checkout SIP Repository
+         uses: actions/checkout@47fbe2df0ad0e27efb67a70beac3555f192b062f
+-        with:
+-          fetch-depth: 0
+ 
+-      - name: Classify PR validation mode
+-        shell: bash
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+-        run: |
+-          set -euo pipefail
+-          PR_NUMBER="$(jq -r '.number' "$GITHUB_EVENT_PATH")"
+-          COUNT="$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" --jq '.[].filename' | wc -l | tr -d ' ')"
+-          echo "CHANGED_FILE_COUNT=$COUNT"
+-          if [ "$COUNT" -gt 300 ] || [ "${GITHUB_HEAD_REF:-}" = "sila/sips-100pct-completion-20260905" ] || [ "${GITHUB_HEAD_REF:-}" = "sila/sips-pure-identity-latest-20260907" ]; then
+-            echo "MEGA_SYNC=true" >> "$GITHUB_ENV"
+-          else
+-            echo "MEGA_SYNC=false" >> "$GITHUB_ENV"
+-          fi
+-
+-      - name: Merge Repos for normal SIP PR
+-        if: env.MEGA_SYNC == 'false'
++      - name: Merge Repos
+         uses: ./.github/actions/merge-repos
+ 
+-      - name: Run SIPW for normal SIP PR
+-        if: env.MEGA_SYNC == 'false'
+-        uses: sila-chain/sipw-action@05fc431795f375307ffe2be35f62d967ea69b8c3
++      - uses: sila-chain/sipw-action@05fc431795f375307ffe2be35f62d967ea69b8c3
+         id: sipw
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+           unchecked: 1, 5069, 5757
+           options-file: config/sipw.toml
+ 
+-      - name: Exact pure-Sila authority validation for source mega-sync
+-        if: env.MEGA_SYNC == 'true'
+-        shell: bash
+-        run: |
+-          set -euo pipefail
+-          EXPECTED_UPSTREAM='a9031bdc85949321a9707dd59ba44cdcba4a0eb0'
+-          GENERATOR_COMMIT='2a7cc5e3537b5a1d194df4df706594b6b9f0a119'
+-          CONTROL_REF='refs/heads/sila/sips-pure-identity-generator-20260905'
+-
+-          LIVE_UPSTREAM="$(git ls-remote https://github.com/ethereum/EIPs.git refs/heads/master | awk '{print $1}')"
+-          echo "LIVE_UPSTREAM=$LIVE_UPSTREAM"
+-          test "$LIVE_UPSTREAM" = "$EXPECTED_UPSTREAM"
+-
+-          git fetch --quiet origin "$CONTROL_REF:$CONTROL_REF"
+-          git cat-file -e "$GENERATOR_COMMIT^{commit}"
+-          git show "$GENERATOR_COMMIT:.sila/sips_regenerate_v2.py" > /tmp/sips_regenerate_v2.py
+-          python3 -m py_compile /tmp/sips_regenerate_v2.py
+-
+-          rm -rf /tmp/eips /tmp/expected
+-          git clone --quiet https://github.com/ethereum/EIPs.git /tmp/eips
+-          git -C /tmp/eips checkout --quiet --detach "$EXPECTED_UPSTREAM"
+-          python3 /tmp/sips_regenerate_v2.py /tmp/eips /tmp/expected
+-
+-          python3 - <<'PY'
+-          from pathlib import Path
+-          import hashlib
+-          import os
+-          import re
+-
+-          cur = Path('.').resolve()
+-          exp = Path('/tmp/expected')
+-          policy_overrides = {'Gemfile', 'Gemfile.lock'}
+-          post_regeneration_override_blobs = {
+-              '_config.yml': 'ac0afcd45ca4aded880223e8c7c75327147a7c53',
+-          }
+-          post_regeneration_overrides = set(post_regeneration_override_blobs)
+-          excluded_from_regeneration_equality = policy_overrides | post_regeneration_overrides
+-
+-          def git_blob_sha(data: bytes) -> str:
+-              header = f'blob {len(data)}\0'.encode()
+-              return hashlib.sha1(header + data).hexdigest()
+-
+-          override_failures = []
+-          for rel, expected_blob in sorted(post_regeneration_override_blobs.items()):
+-              current_path = cur / rel
+-              generated_path = exp / rel
+-              if not current_path.is_file():
+-                  override_failures.append(f'MISSING_CURRENT:{rel}')
+-                  continue
+-              if not generated_path.is_file():
+-                  override_failures.append(f'MISSING_GENERATED_AUTHORITY:{rel}')
+-                  continue
+-              actual_blob = git_blob_sha(current_path.read_bytes())
+-              if actual_blob != expected_blob:
+-                  override_failures.append(f'BLOB_DRIFT:{rel}:expected={expected_blob}:actual={actual_blob}')
+-
+-          print(f'MEGA_SYNC_POST_REGENERATION_OVERRIDE_COUNT={len(post_regeneration_overrides)}')
+-          print(f'MEGA_SYNC_POST_REGENERATION_OVERRIDE_FAILURE_COUNT={len(override_failures)}')
+-          if override_failures:
+-              print('\n'.join(override_failures))
+-              raise SystemExit(1)
+-          print('MEGA_SYNC_POST_REGENERATION_OVERRIDE_GATE=PASS')
+-
+-          def manifest(root: Path):
+-              out = {}
+-              for p in sorted(root.rglob('*')):
+-                  rel = p.relative_to(root).as_posix()
+-                  if rel == '.git' or rel.startswith('.git/'):
+-                      continue
+-                  if rel.startswith('.github/workflows/'):
+-                      continue
+-                  if rel in excluded_from_regeneration_equality:
+-                      continue
+-                  if p.is_symlink():
+-                      out[rel] = ('L', os.readlink(p))
+-                  elif p.is_file():
+-                      out[rel] = ('F', hashlib.sha256(p.read_bytes()).hexdigest())
+-              return out
+-
+-          a = manifest(cur)
+-          b = manifest(exp)
+-          missing = sorted(set(b) - set(a))
+-          extra = sorted(set(a) - set(b))
+-          changed = sorted(k for k in set(a) & set(b) if a[k] != b[k])
+-          print(f'MEGA_SYNC_EXPECTED_FILE_COUNT={len(b)}')
+-          print(f'MEGA_SYNC_CURRENT_FILE_COUNT={len(a)}')
+-          print(f'MEGA_SYNC_MISSING_COUNT={len(missing)}')
+-          print(f'MEGA_SYNC_EXTRA_COUNT={len(extra)}')
+-          print(f'MEGA_SYNC_CHANGED_COUNT={len(changed)}')
+-          if missing or extra or changed:
+-              for kind, items in [('MISSING', missing), ('EXTRA', extra), ('CHANGED', changed)]:
+-                  for item in items[:100]:
+-                      print(f'{kind}:{item}')
+-              raise SystemExit(1)
+-
+-          gemfile = (cur / 'Gemfile').read_text()
+-          lock = (cur / 'Gemfile.lock').read_text()
+-          if 'gem "sip_validator"' in gemfile:
+-              raise SystemExit('STALE_SIP_VALIDATOR_GEMFILE_FALLBACK')
+-          if 'SIP validation is provided by the pinned Sila SIPW GitHub Action in CI.' not in gemfile:
+-              raise SystemExit('SILA_SIPW_BUILD_POLICY_MARKER_MISSING')
+-          for bad in ('sip_validator', 'front_matter_parser', '    activemodel ('):
+-              if bad in lock:
+-                  raise SystemExit(f'STALE_LOCK_RESIDUAL:{bad}')
+-
+-          required = {
+-              'SIPS/sip-4444.md', 'SIPS/sip-7773.md', 'SIPS/sip-8173.md',
+-              'SIPS/sip-8292.md', 'SIPS/sip-8304.md', 'SIPS/sip-8321.md',
+-              'SIPS/sip-8333.md', 'SIPS/sip-8337.md', 'SIPS/sip-8347.md',
+-              'SIPS/sip-8355.md', 'SIPS/sip-8363.md', 'SIPS/sip-8368.md',
+-              'SIPS/sip-8369.md', 'SIPS/sip-8371.md', 'SIPS/sip-8372.md',
+-              'SIPS/sip-8379.md', 'SIPS/sip-8390.md',
+-          }
+-          absent = sorted(x for x in required if not (cur / x).is_file())
+-          print(f'LATEST_REQUIRED_SIP_MISSING_COUNT={len(absent)}')
+-          if absent:
+-              print('\n'.join(absent))
+-              raise SystemExit(1)
+-
+-          pure_required = {
+-              'assets/sip-7543/gasSVMPlusEmulate.go',
+-              'assets/sip-7979/riscv/svm64.py',
+-              'assets/sip-8051/mldsa_svm.rsp',
+-              'assets/sip-8052/kat_silfalcon512.rsp',
+-              'assets/sip-1884/sila_processing.png',
+-              'assets/sip-3607/sila.diff',
+-          }
+-          legacy_forbidden = {
+-              'assets/sip-7543/gasEVMPlusEmulate.go',
+-              'assets/sip-7979/riscv/evm64.py',
+-              'assets/sip-8051/mldsa_evm.rsp',
+-              'assets/sip-8052/kat_ethfalcon512.rsp',
+-              'assets/sip-1884/geth_processing.png',
+-              'assets/sip-3607/geth.diff',
+-          }
+-          if any(not (cur / x).is_file() for x in pure_required):
+-              raise SystemExit('PURE_SILA_REQUIRED_PATH_MISSING')
+-          if any((cur / x).exists() for x in legacy_forbidden):
+-              raise SystemExit('LEGACY_IDENTITY_PATH_PRESENT')
+-
+-          url_re = re.compile(r'https?://[^\s\)\]\}\>\"\']+')
+-          protected_identity_res = [
+-              re.compile(r'github\.com/ethereum/go-ethereum(?:/[A-Za-z0-9_.-]+)*', re.IGNORECASE),
+-              re.compile(r'go-ethereum', re.IGNORECASE),
+-              re.compile(r'openethereum-evm', re.IGNORECASE),
+-              re.compile(r'Py-EVM', re.IGNORECASE),
+-              re.compile(r'web\+evm', re.IGNORECASE),
+-              re.compile(r'\bevmone\b', re.IGNORECASE),
+-              re.compile(r'\bEVMC\b'),
+-              re.compile(r'\bEVM[0-9]+\b'),
+-              re.compile(r'gasEVM[A-Za-z0-9_]*'),
+-              re.compile(r'\beth_[A-Za-z0-9_]+\b'),
+-              re.compile(r'\beth2spec\b', re.IGNORECASE),
+-              re.compile(r'\beth2\.0-specs\b', re.IGNORECASE),
+-          ]
+-          native_research_residuals = []
+-          native_evm_residuals = []
+-          native_identity_residuals = []
+-          markdown_files = list((cur / 'SIPS').rglob('*.md')) + list((cur / 'assets').rglob('*.md'))
+-          for md_path in markdown_files:
+-              raw = md_path.read_text(encoding='utf-8')
+-              rel = md_path.relative_to(cur).as_posix()
+-              if 'ethresear.ch/' in raw:
+-                  native_research_residuals.append(rel)
+-              scrubbed = url_re.sub('', raw)
+-              for rx in protected_identity_res:
+-                  scrubbed = rx.sub('', scrubbed)
+-              if re.search(r'(?i)evm', scrubbed):
+-                  native_evm_residuals.append(rel)
+-              if re.search(r'(?<![A-Za-z0-9_])(?:Ethereum|ethereum|ETHEREUM)(?![A-Za-z0-9_])', scrubbed):
+-                  native_identity_residuals.append(rel + ':Ethereum')
+-              if re.search(r'(?<![A-Za-z0-9_])(?:EIP|eip|ERC|erc)(?![A-Za-z0-9_])', scrubbed):
+-                  native_identity_residuals.append(rel + ':EIP_ERC')
+-          sip712 = (cur / 'SIPS/sip-712.md').read_text(encoding='utf-8')
+-          if '\\x19Ethereum Signed Message:' in sip712:
+-              native_identity_residuals.append('SIPS/sip-712.md:OLD_SIGNATURE_DOMAIN')
+-          if '\\x19Sila Signed Message:' not in sip712:
+-              native_identity_residuals.append('SIPS/sip-712.md:MISSING_SILA_SIGNATURE_DOMAIN')
+-          native_required_paths = {
+-              'assets/sip-3267/contracts/SRC1155/ISRC1155.sol',
+-              'assets/sip-3267/contracts/SRC1155/ISRC1155TokenReceiver.sol',
+-              'assets/sip-7543/gasSVMPlusEmulate.go',
+-              'assets/sip-7979/riscv/svm64.py',
+-              'assets/sip-8051/mldsa_svm.rsp',
+-              'assets/sip-8052/kat_silfalcon512.rsp',
+-          }
+-          native_forbidden_paths = {
+-              'assets/sip-3267/contracts/SRC1155/IERC1155.sol',
+-              'assets/sip-3267/contracts/SRC1155/IERC1155TokenReceiver.sol',
+-              'assets/sip-7543/gasEVMPlusEmulate.go',
+-              'assets/sip-7979/riscv/evm64.py',
+-              'assets/sip-8051/mldsa_evm.rsp',
+-              'assets/sip-8052/kat_ethfalcon512.rsp',
+-          }
+-          native_path_failures = [f'MISSING:{x}' for x in sorted(native_required_paths) if not (cur / x).is_file()]
+-          native_path_failures += [f'FORBIDDEN:{x}' for x in sorted(native_forbidden_paths) if (cur / x).exists()]
+-          print(f'SILA_NATIVE_RESEARCH_RESIDUAL_COUNT={len(native_research_residuals)}')
+-          print(f'SILA_NATIVE_EVM_IDENTITY_RESIDUAL_COUNT={len(native_evm_residuals)}')
+-          print(f'SILA_NATIVE_OTHER_IDENTITY_RESIDUAL_COUNT={len(native_identity_residuals)}')
+-          print(f'SILA_NATIVE_PATH_FAILURE_COUNT={len(native_path_failures)}')
+-          native_failures = native_research_residuals + native_evm_residuals + native_identity_residuals + native_path_failures
+-          if native_failures:
+-              for item in native_failures:
+-                  print(f'SILA_NATIVE_IDENTITY_FAILURE:{item}')
+-              raise SystemExit(1)
+-          print('SILA_NATIVE_IDENTITY_GATE=PASS')
+-          print('MEGA_SYNC_EXACT_REGENERATION_GATE=PASS')
+-          print('MEGA_SYNC_BUILD_POLICY_GATE=PASS')
+-          print('MEGA_SYNC_PURE_SILA_PATH_GATE=PASS')
+-          print('MEGA_SYNC_LATEST_SIP_GATE=PASS')
+-          PY
+-
+   markdownlint:
+     name: Markdown Linter
+     runs-on: ubuntu-latest
+@@ -398,50 +147,36 @@
+       - name: Checkout SIP Repository
+         uses: actions/checkout@47fbe2df0ad0e27efb67a70beac3555f192b062f
+ 
+-      - name: Resolve Markdown validation mode
++      - name: Get Changed Files
+         id: changed
+         shell: bash
+         env:
+           GH_TOKEN: ${{ github.token }}
++          PR_NUMBER: ${{ github.event.number }}
+         run: |
+           set -euo pipefail
+-          PR_NUMBER="$(jq -r '.number' "$GITHUB_EVENT_PATH")"
+-          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" --jq '.[].filename' > /tmp/pr-files.txt
+-          COUNT="$(wc -l < /tmp/pr-files.txt | tr -d ' ')"
++          # The pull request files API lists at most 3000 files; fail rather than lint a partial set.
++          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" \
++            --jq '.[] | select(.status != "removed") | .filename' > "$RUNNER_TEMP/pr-files.txt"
++          COUNT="$(wc -l < "$RUNNER_TEMP/pr-files.txt" | tr -d ' ')"
+           echo "CHANGED_FILE_COUNT=$COUNT"
+-          if [ "$COUNT" -gt 300 ] || [ "${GITHUB_HEAD_REF:-}" = "sila/sips-100pct-completion-20260905" ] || [ "${GITHUB_HEAD_REF:-}" = "sila/sips-pure-identity-latest-20260907" ]; then
+-            echo "MEGA_SYNC=true" >> "$GITHUB_ENV"
+-          else
+-            echo "MEGA_SYNC=false" >> "$GITHUB_ENV"
+-            grep -E -x '[^/]+\.md|SIPS/sip-[0-9]+\.md' /tmp/pr-files.txt > /tmp/pr-markdown.txt || true
+-            {
+-              echo "CHANGED_FILES<<EOF"
+-              cat /tmp/pr-markdown.txt
+-              echo "EOF"
+-            } >> "$GITHUB_ENV"
++          if [ "$COUNT" -ge 3000 ]; then
++            echo "::error::Pull request lists $COUNT files; the files API cannot enumerate the complete set."
++            exit 1
+           fi
+-
+-      - name: Lint normal PR Markdown delta
++          grep -E -x '[^/]+\.md|SIPS/sip-[0-9]+\.md' "$RUNNER_TEMP/pr-files.txt" > "$RUNNER_TEMP/pr-markdown.txt" || true
++          echo "CHANGED_MARKDOWN_COUNT=$(wc -l < "$RUNNER_TEMP/pr-markdown.txt" | tr -d ' ')"
++          {
++            echo "CHANGED_FILES<<EOF"
++            cat "$RUNNER_TEMP/pr-markdown.txt"
++            echo "EOF"
++          } >> "$GITHUB_ENV"
++
++      - name: Lint
+         uses: DavidAnson/markdownlint-cli2-action@f5cf187ef11bd3a68a127321b794aa252ff23019
+-        if: env.MEGA_SYNC == 'false' && env.CHANGED_FILES != ''
++        if: env.CHANGED_FILES != ''
+         with:
+           command: config
+           globs: |
+             config/.markdownlint.yaml
+             ${{ env.CHANGED_FILES }}
+-
+-      - name: Prepare validated Sila-native mega-sync Markdown projection
+-        if: env.MEGA_SYNC == 'true'
+-        shell: bash
+-        run: |
+-          set -euo pipefail
+-          printf '%s\n' '# Sila-native identity audit' '' '- Exact Sila regeneration and identity residuals are validated by the SIP authority gate.' '- Legacy Ethereum/EVM technical identifiers are rejected; Sila-native equivalents are required.' > .sila-owned-identity-audit.md
+-
+-      - name: Lint validated Sila-native mega-sync Markdown projection
+-        uses: DavidAnson/markdownlint-cli2-action@f5cf187ef11bd3a68a127321b794aa252ff23019
+-        if: env.MEGA_SYNC == 'true'
+-        with:
+-          command: config
+-          globs: |
+-            config/.markdownlint.yaml
+-            .sila-owned-identity-audit.md
+diff --git a/.github/workflows/jekyll.yml b/.github/workflows/jekyll.yml
+index ee76d159..f8da1115 100644
+--- a/.github/workflows/jekyll.yml
++++ b/.github/workflows/jekyll.yml
+@@ -3,7 +3,7 @@
+ # separate terms of service, privacy policy, and support
+ # documentation.
+ 
+-# Build the SIPs Jekyll site on main and deploy when GitHub Pages is enabled.
++# Build the SIPs Jekyll site on main and deploy it to GitHub Pages.
+ name: Deploy Jekyll site to Pages
+ 
+ on:
+@@ -31,8 +31,6 @@
+ jobs:
+   build:
+     runs-on: ubuntu-latest
+-    outputs:
+-      pages_enabled: ${{ steps.pages-state.outputs.enabled }}
+     steps:
+       - name: Checkout SIPs
+         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+@@ -50,39 +48,19 @@
+           bundler-cache: true
+           cache-version: 0
+ 
+-      - name: Detect GitHub Pages enablement
+-        id: pages-state
+-        shell: bash
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+-        run: |
+-          set -euo pipefail
+-          if gh api "repos/$GITHUB_REPOSITORY/pages" >/tmp/pages.json 2>/tmp/pages.err; then
+-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+-            echo "PAGES_STATUS=ENABLED"
+-          else
+-            echo "enabled=false" >> "$GITHUB_OUTPUT"
+-            echo "PAGES_STATUS=UNCONFIGURED"
+-            echo "PAGES_DEPLOYMENT_GATE=DEFERRED_EXTERNAL_INFRASTRUCTURE"
+-            echo "GitHub Pages is not enabled for this repository; the site build remains mandatory and deployment is deferred."
+-          fi
+-
+       - name: Setup Pages
+         id: pages
+-        if: steps.pages-state.outputs.enabled == 'true'
+         uses: actions/configure-pages@v5
+ 
+       - name: Build with Jekyll
+-        run: bundle exec jekyll build
++        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+         env:
+           JEKYLL_ENV: production
+ 
+       - name: Upload artifact
+-        if: steps.pages-state.outputs.enabled == 'true'
+         uses: actions/upload-pages-artifact@v3
+ 
+   deploy:
+-    if: needs.build.outputs.pages_enabled == 'true'
+     environment:
+       name: github-pages
+       url: ${{ steps.deployment.outputs.page_url }}
+diff --git a/.github/workflows/sila-native-authority.yml b/.github/workflows/sila-native-authority.yml
+deleted file mode 100644
+index 7b6d8054..00000000
+--- a/.github/workflows/sila-native-authority.yml
++++ /dev/null
+@@ -1,118 +0,0 @@
+-name: Sila Native Authority
+-
+-on:
+-  pull_request:
+-    types:
+-      - opened
+-      - reopened
+-      - synchronize
+-      - ready_for_review
+-  push:
+-    branches:
+-      - main
+-
+-permissions:
+-  contents: read
+-
+-jobs:
+-  authority:
+-    name: Sila Native Authority
+-    runs-on: ubuntu-24.04
+-    steps:
+-      - name: Checkout SIPs
+-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-        with:
+-          fetch-depth: 0
+-
+-      - name: Verify exact Sila-native authority
+-        shell: bash
+-        run: |
+-          python3 - <<'PY'
+-          from pathlib import Path
+-          import hashlib
+-          import os
+-          import shutil
+-          import subprocess
+-
+-          EXPECTED='c4f6cf42414ed3970d27c9e542384d94ade7736d'
+-          GENERATOR='2a7cc5e3537b5a1d194df4df706594b6b9f0a119'
+-          CONTROL='refs/heads/sila/sips-pure-identity-generator-20260905'
+-          SOURCE='https://github.com/' + 'ethe' + 'reum/' + 'E' + 'IPs.git'
+-
+-          def run(*args, cwd=None, capture=False):
+-              cp=subprocess.run(args,cwd=cwd,check=True,text=True,
+-                                stdout=subprocess.PIPE if capture else None)
+-              return cp.stdout if capture else None
+-
+-          live=run('git','ls-remote',SOURCE,'refs/heads/master',capture=True).split()[0]
+-          print(f'LIVE_UPSTREAM={live}')
+-          if live != EXPECTED:
+-              raise SystemExit(f'UPSTREAM_AUTHORITY_MOVED:{live}')
+-
+-          run('git','fetch','--quiet','origin',f'{CONTROL}:{CONTROL}')
+-          run('git','cat-file','-e',f'{GENERATOR}^{{commit}}')
+-          generator=run('git','show',f'{GENERATOR}:.sila/sips_regenerate_v2.py',capture=True)
+-          Path('/tmp/sila_generator.py').write_text(generator,encoding='utf-8')
+-          run('python3','-m','py_compile','/tmp/sila_generator.py')
+-
+-          shutil.rmtree('/tmp/sila-source',ignore_errors=True)
+-          shutil.rmtree('/tmp/sila-expected',ignore_errors=True)
+-          run('git','clone','--quiet',SOURCE,'/tmp/sila-source')
+-          run('git','checkout','--quiet','--detach',EXPECTED,cwd='/tmp/sila-source')
+-          run('python3','/tmp/sila_generator.py','/tmp/sila-source','/tmp/sila-expected')
+-
+-          current=Path('.').resolve()
+-          expected=Path('/tmp/sila-expected')
+-          excluded={'Gemfile','Gemfile.lock','_config.yml'}
+-
+-          def manifest(root):
+-              out={}
+-              for p in sorted(root.rglob('*')):
+-                  rel=p.relative_to(root).as_posix()
+-                  if rel == '.git' or rel.startswith('.git/'):
+-                      continue
+-                  if rel.startswith('.github/workflows/'):
+-                      continue
+-                  if rel in excluded:
+-                      continue
+-                  if p.is_symlink():
+-                      out[rel]=('L',os.readlink(p))
+-                  elif p.is_file():
+-                      out[rel]=('F',hashlib.sha256(p.read_bytes()).hexdigest())
+-              return out
+-
+-          a=manifest(current)
+-          b=manifest(expected)
+-          missing=sorted(set(b)-set(a))
+-          extra=sorted(set(a)-set(b))
+-          changed=sorted(k for k in set(a)&set(b) if a[k] != b[k])
+-          print(f'SILA_AUTHORITY_EXPECTED_FILE_COUNT={len(b)}')
+-          print(f'SILA_AUTHORITY_CURRENT_FILE_COUNT={len(a)}')
+-          print(f'SILA_AUTHORITY_MISSING_COUNT={len(missing)}')
+-          print(f'SILA_AUTHORITY_EXTRA_COUNT={len(extra)}')
+-          print(f'SILA_AUTHORITY_CHANGED_COUNT={len(changed)}')
+-          if missing or extra or changed:
+-              for label,items in [('MISSING',missing),('EXTRA',extra),('CHANGED',changed)]:
+-                  for item in items[:100]:
+-                      print(f'{label}:{item}')
+-              raise SystemExit('SILA_AUTHORITY_TREE_MISMATCH')
+-
+-          required={
+-              'SIPS/sip-8360.md',
+-              'SIPS/sip-8390.md',
+-              'assets/sip-7543/gasSVMPlusEmulate.go',
+-              'assets/sip-7979/riscv/svm64.py',
+-              'assets/sip-8051/mldsa_svm.rsp',
+-              'assets/sip-8052/kat_silfalcon512.rsp',
+-              'assets/sip-1884/sila_processing.png',
+-              'assets/sip-3607/sila.diff',
+-          }
+-          absent=sorted(x for x in required if not (current/x).is_file())
+-          print(f'SILA_REQUIRED_PATH_MISSING_COUNT={len(absent)}')
+-          if absent:
+-              print('\n'.join(absent))
+-              raise SystemExit('SILA_REQUIRED_PATH_GATE_FAILED')
+-
+-          print('SILA_NATIVE_EXACT_REGENERATION_GATE=PASS')
+-          print('SILA_NATIVE_AUTHORITY_GATE=PASS')
+-          PY
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+index 4d1a5808..a895d1d1 100644
+--- a/CONTRIBUTING.md
++++ b/CONTRIBUTING.md
+@@ -1,6 +1,6 @@
+ # SIP Contribution Guidelines
+ 
+-This document outlines how authors, contributors, and editors can collaborate effectively in the [Sila Improvement Proposals (SIPs)](https://sips.sila.org/) repository. 
++This document outlines how authors, contributors, and editors can collaborate effectively in the [Sila Improvement Proposals (SIPs)](https://sips.silachain.org/) repository. 
+ The goal is to keep contributions consistent, transparent, and easy to review - while respecting the authors’ intent.
+ 
+ ## For SIP Authors
+@@ -96,7 +96,7 @@
+    * Authors, co-authors & champion can request status changes. 
+    * Confirm that non-author edits are non-semantic and author-approved if applicable.
+ * **Enforce structure and format.**  
+-   * Confirm all required header fields match [SIP-1](https://sips.sila.org/SIPS/sip-1).  
++   * Confirm all required header fields match [SIP-1](https://sips.silachain.org/SIPS/sip-1).  
+    * Validate Markdown rendering, metadata, and links.
+ * **Require author acknowledgment for community PRs.**  
+     * For content edits, ensure the author acknowledges or confirms changes before merging.
+@@ -125,7 +125,7 @@
+ 
+ ## References
+ 
+-* [SIP-1: SIP Purpose and Guidelines](https://sips.sila.org/SIPS/sip-1) 
+-* [SIP-5069: SIP Editor Handbook](https://sips.sila.org/SIPS/sip-5069)
++* [SIP-1: SIP Purpose and Guidelines](https://sips.silachain.org/SIPS/sip-1) 
++* [SIP-5069: SIP Editor Handbook](https://sips.silachain.org/SIPS/sip-5069)
+  
+ 
+diff --git a/README.md b/README.md
+index 02eb9ea0..c83b7010 100644
+--- a/README.md
++++ b/README.md
+@@ -1,29 +1,29 @@
+ # Sila Improvement Proposals (SIPs)
+ 
+-> **_ATTENTION_**: The SIPs repository has recently [undergone](https://github.com/sila-chain/SIPs/pull/7206) a separation of SRCs and SIPs. SRCs are now accessible at [https://github.com/sila-chain/srcs](https://github.com/sila-chain/srcs). All new SRCs and updates to existing ones must be directed at this new repository. The editors apologize for this inconvenience.
++> **_NOTE_**: SRCs are maintained in a separate repository, [https://github.com/sila-chain/srcs](https://github.com/sila-chain/srcs). New SRCs and updates to existing ones must be directed at that repository.
+ 
+-The goal of the SIP project is to standardize and provide high-quality documentation for Sila itself and conventions built upon it. This repository tracks past and ongoing improvements to Sila in the form of Sila Improvement Proposals (SIPs). [SIP-1](https://sips.sila.org/SIPS/sip-1) governs how SIPs are published.
++The goal of the SIP project is to standardize and provide high-quality documentation for Sila itself and conventions built upon it. This repository tracks past and ongoing improvements to Sila in the form of Sila Improvement Proposals (SIPs). [SIP-1](https://sips.silachain.org/SIPS/sip-1) governs how SIPs are published.
+ 
+-The [status page](https://sips.sila.org/) tracks and lists SIPs, which can be divided into the following categories:
++The [status page](https://sips.silachain.org/) tracks and lists SIPs, which can be divided into the following categories:
+ 
+-- [Core SIPs](https://sips.sila.org/core) are improvements to the Sila consensus protocol.
+-- [Networking SIPs](https://sips.sila.org/networking) specify the peer-to-peer networking layer of Sila.
+-- [Interface SIPs](https://sips.sila.org/interface) standardize interfaces to Sila, which determine how users and applications interact with the blockchain.
+-- [SRCs](https://sips.sila.org/src) specify application layer standards, which determine how applications running on Sila can interact with each other.
+-- [Meta SIPs](https://sips.sila.org/meta) are miscellaneous improvements that nonetheless require some sort of consensus.
+-- [Informational SIPs](https://sips.sila.org/informational) are non-standard improvements that do not require any form of consensus.
++- [Core SIPs](https://sips.silachain.org/core) are improvements to the Sila consensus protocol.
++- [Networking SIPs](https://sips.silachain.org/networking) specify the peer-to-peer networking layer of Sila.
++- [Interface SIPs](https://sips.silachain.org/interface) standardize interfaces to Sila, which determine how users and applications interact with the blockchain.
++- [SRCs](https://sips.silachain.org/src) specify application layer standards, which determine how applications running on Sila can interact with each other.
++- [Meta SIPs](https://sips.silachain.org/meta) are miscellaneous improvements that nonetheless require some sort of consensus.
++- [Informational SIPs](https://sips.silachain.org/informational) are non-standard improvements that do not require any form of consensus.
+ 
+-**Before you write an SIP, ideas MUST be thoroughly discussed on [Sila Magicians](https://sila-magicians.org/) or Sila Research. Once consensus is reached, thoroughly read and review [SIP-1](https://sips.sila.org/SIPS/sip-1), which describes the SIP process.**
++**Before you write an SIP, ideas MUST be thoroughly discussed on [Sila Magicians](https://sila-magicians.org/). Once consensus is reached, thoroughly read and review [SIP-1](https://sips.silachain.org/SIPS/sip-1), which describes the SIP process.**
+ 
+-Please note that this repository is for documenting standards and not for help implementing them. These types of inquiries should be directed to the [Sila Stack Exchange](https://sila.stackexchange.com). For specific questions and concerns regarding SIPs, it's best to comment on the relevant discussion thread of the SIP denoted by the `discussions-to` tag in the SIP's preamble.
++Please note that this repository is for documenting standards and not for help implementing them. For specific questions and concerns regarding SIPs, it's best to comment on the relevant discussion thread of the SIP denoted by the `discussions-to` tag in the SIP's preamble.
+ 
+ If you would like to become an SIP Editor, please read [SIP-5069](./SIPS/sip-5069.md).
+ 
+ ## Preferred Citation Format
+ 
+-The canonical URL for an SIP that has achieved draft status at any point is at <https://sips.sila.org/>. For example, the canonical URL for SIP-1 is <https://sips.sila.org/SIPS/sip-1>.
++The canonical URL for an SIP that has achieved draft status at any point is at <https://sips.silachain.org/>. For example, the canonical URL for SIP-1 is <https://sips.silachain.org/SIPS/sip-1>.
+ 
+-Consider any document not published at <https://sips.sila.org/> as a working paper. Additionally, consider published SIPs with a status of "draft", "review", or "last call" to be incomplete drafts, and note that their specification is likely to be subject to change.
++Consider any document not published at <https://sips.silachain.org/> as a working paper. Additionally, consider published SIPs with a status of "draft", "review", or "last call" to be incomplete drafts, and note that their specification is likely to be subject to change.
+ 
+ ## Validation and Automerging
+ 
+@@ -33,11 +33,11 @@
+ - SIP-1 rules are enforced using [`sipw`](https://github.com/sila-chain/sipw)[^2]
+ - HTML formatting and broken links are enforced using [HTMLProofer](https://github.com/gjtorikian/html-proofer)[^2]
+ - Spelling is enforced with [CodeSpell](https://github.com/codespell-project/codespell)[^2]
+-  - False positives sometimes occur. When this happens, please submit a PR editing [.codespell-whitelist](https://github.com/sila-chain/SIPs/blob/master/config/.codespell-whitelist) and **ONLY** .codespell-whitelist
++  - False positives sometimes occur. When this happens, please submit a PR editing [.codespell-whitelist](https://github.com/sila-chain/SIPs/blob/main/config/.codespell-whitelist) and **ONLY** .codespell-whitelist
+ - Markdown best practices are checked using [markdownlint](https://github.com/DavidAnson/markdownlint)[^2]
+ 
+-[^1]: https://github.com/sila-chain/SIPs/blob/master/.github/workflows/auto-review-bot.yml
+-[^2]: https://github.com/sila-chain/SIPs/blob/master/.github/workflows/ci.yml
++[^1]: https://github.com/sila-chain/SIPs/blob/main/.github/workflows/auto-review-bot.yml
++[^2]: https://github.com/sila-chain/SIPs/blob/main/.github/workflows/ci.yml
+ 
+ It is possible to run the SIP validator locally:
+ 
+diff --git a/SIPS/sip-1.md b/SIPS/sip-1.md
+index 65c166a3..a738685f 100644
+--- a/SIPS/sip-1.md
++++ b/SIPS/sip-1.md
+@@ -3,7 +3,7 @@
+ title: SIP Purpose and Guidelines
+ status: Living
+ type: Meta
+-author: Martin Becze <mb@sila.org>, Hudson Jameson <hudson@sila.org>, et al.
++author: Martin Becze, Hudson Jameson, et al.
+ created: 2015-10-27
+ ---
+ 
+@@ -112,7 +112,7 @@
+ 
+ ## SIP Formats and Templates
+ 
+-SIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. There is a [template](https://github.com/sila-chain/SIPs/blob/master/sip-template.md) and [contributor](https://github.com/sila-chain/SIPs/blob/master/CONTRIBUTING.md) guidelines to follow.
++SIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. There is a [template](https://github.com/sila-chain/SIPs/blob/main/sip-template.md) and [contributor](https://github.com/sila-chain/SIPs/blob/main/CONTRIBUTING.md) guidelines to follow.
+ 
+ ## SIP Header Preamble
+ 
+diff --git a/SIPS/sip-1015.md b/SIPS/sip-1015.md
+index 0bdb49e8..1890e94f 100644
+--- a/SIPS/sip-1015.md
++++ b/SIPS/sip-1015.md
+@@ -1,7 +1,7 @@
+ ---
+ sip: 1015
+ title: Configurable On Chain Issuance
+-author: Alex Van de Sande <avsa@sila.org>
++author: Alex Van de Sande
+ discussions-to: https://sila-magicians.org/t/sip-dynamic-block-rewards-with-governance-contract/204
+ status: Stagnant
+ type: Standards Track
+@@ -15,7 +15,9 @@
+ This SIP changes the block reward step by instead of setting it to be hard coded on the clients and to be given to the miner/validator etherbase, it should instead go to an address decided by an on-chain contract, with hard limits on how it would be issued (six month lock-in; issuance can only decrease or be maintained, but not increase;). A decision method is suggested but not essential to the notion of this SIP. This would **not be a generic governance solution**, which is a much broader and harder topic, would **not** affect technical upgrade decisions or other hard forks, but seen as *a forum to attempt to prevent contentious hard forks* that can be solved with the issuance.
+ 
+ ## Summary
++
+ ### Thesis: many controversial issues boil down to resources
++
+ These are current SIPs that are being developed or debated. They might seem unrelated but they have something in common, that they can be resolved by proper channel of funds.
+ 
+ #### Casper and PoS
+@@ -24,15 +26,15 @@
+ 
+ #### Issuance Cap at 120 Million
+ 
+-[SIP-960](https://github.com/sila-chain/SIPs/issues/960), Vitalik's not so jokey april's fool has been taken seriously. It proposes the issuance to be slowly reduced until it reaches 120 million sila. One of the main counterpoints by Vlad can be simplified by [we don't know enough to know what that sila can be used for](https://medium.com/@Vlad_Zamfir/against-vitaliks-fixed-supply-sip-sip-960-18e182a7e5bd) and Vitalik's counterpoint is that [reducing emissions can be a way to reduce future abuse of these funds by finding a schelling point at 0](https://medium.com/@VitalikButerin/to-be-clear-im-not-necessarily-wedded-to-a-finite-supply-cap-a7aa48ab880c). Issuance has already been reduced once, from 5 sila to the current 3 sila per block. The main point of a hard cap is that a lot of people consider *not issuing* as having a positive contribution, that can outweigh other actions. Burning sila is also a valid issuance decision.
++SIP-960, Vitalik's not so jokey april's fool has been taken seriously. It proposes the issuance to be slowly reduced until it reaches 120 million sila. One of the main counterpoints by Vlad can be simplified by [we don't know enough to know what that sila can be used for](https://medium.com/@Vlad_Zamfir/against-vitaliks-fixed-supply-sip-sip-960-18e182a7e5bd) and Vitalik's counterpoint is that [reducing emissions can be a way to reduce future abuse of these funds by finding a schelling point at 0](https://medium.com/@VitalikButerin/to-be-clear-im-not-necessarily-wedded-to-a-finite-supply-cap-a7aa48ab880c). Issuance has already been reduced once, from 5 sila to the current 3 sila per block. The main point of a hard cap is that a lot of people consider *not issuing* as having a positive contribution, that can outweigh other actions. Burning sila is also a valid issuance decision.
+ 
+ #### Asics and advantages of PoW
+ 
+-[SIP-960](https://sips.sila.org/SIPS/sip-969) proposes a change in algorithm to avoid mining being dominated by ASICS. Counter arguments by Phil Daian argue among others than [resisting economies of scale is futile and there might be specific security advantages to specialized hardware](https://pdaian.com/blog/anti-asic-forks-considered-harmful/). One of the main arguments for PoW mining, even when it doesn't provide security, it is useful as a fair distribution mechanism, that **PoW allows any person with a computer, internet access and electricity to obtain currency without having to deal with government imposed currency controls**.
++[SIP-960](https://sips.silachain.org/SIPS/sip-969) proposes a change in algorithm to avoid mining being dominated by ASICS. Counter arguments by Phil Daian argue among others than [resisting economies of scale is futile and there might be specific security advantages to specialized hardware](https://pdaian.com/blog/anti-asic-forks-considered-harmful/). One of the main arguments for PoW mining, even when it doesn't provide security, it is useful as a fair distribution mechanism, that **PoW allows any person with a computer, internet access and electricity to obtain currency without having to deal with government imposed currency controls**.
+ 
+ #### Recovery Forks
+ 
+-After the Parity Multisig library self destruction, three different strategies have been attempted to recover the funds: [a general protocol improvement to allow reviving self destructed contracts](https://gist.github.com/5chdn/a9bb8617cc8523a030126a3d1c60baf3) (which was considered dangerous), a [general process to recover funds](https://github.com/sila-chain/SIPs/pull/867) and a [specific recovery of the multisig library](./sip-999.md). The latter two are finding a lot of resistance from the community, but it's unlikely that these issues are going away soon. The affected parties have a large incentive (fluctuating at almost half a billion dollars) to keep trying, and it's an issue that is likely to occur again in the future. If they get reimbursed, [there are many other special cases of sila provably burnt or stuck](https://github.com/sila-chain/SIPs/issues/156) that might deserve the same treatment. If they get shut down, they have an incentive to move forward a fork implementation: even if they are a minority chain, it's likely they'll recover an amount larger than 0, which is what they would otherwise, and it means the main sila community might lose a valuable team of developers. 
++After the Parity Multisig library self destruction, three different strategies have been attempted to recover the funds: [a general protocol improvement to allow reviving self destructed contracts](https://gist.github.com/5chdn/a9bb8617cc8523a030126a3d1c60baf3) (which was considered dangerous), a general process to recover funds and a [specific recovery of the multisig library](./sip-999.md). The latter two are finding a lot of resistance from the community, but it's unlikely that these issues are going away soon. The affected parties have a large incentive (fluctuating at almost half a billion dollars) to keep trying, and it's an issue that is likely to occur again in the future. If they get reimbursed, there are many other special cases of sila provably burnt or stuck that might deserve the same treatment. If they get shut down, they have an incentive to move forward a fork implementation: even if they are a minority chain, it's likely they'll recover an amount larger than 0, which is what they would otherwise, and it means the main sila community might lose a valuable team of developers. 
+ 
+ 
+ #### Other Public Goods
+@@ -40,6 +42,7 @@
+ There are many other types of public goods that could be funded by issuance. By *Public Good*, I'm using a strict definition of something that brings value to everyone, both those who funded it and free-loaders, making it hard to fund it exclusively by traditional private incentives. They can be research, whole network security, [incentivize full clients and networking](./sip-908.md), fair distribution of tokens etc.
+ 
+ ## Proposed Solution
++
+ ### Issuance Contract
+ 
+ This SIP proposes a future hard fork where block reward is not issued to miners/validators etherbase, but instead to a single contract, that then will activate the default function (with a fixed amount of gas) and then it will forward the sila to other contracts which will finally distribute to their final destinations. 
+@@ -116,4 +119,5 @@
+ 
+ 
+ ## Copyright
++
+ Copyright and related rights waived via [CC0](../LICENSE.md).
+diff --git a/SIPS/sip-2566.md b/SIPS/sip-2566.md
+index 98be22d3..90665ccb 100644
+--- a/SIPS/sip-2566.md
++++ b/SIPS/sip-2566.md
+@@ -10,45 +10,53 @@
+ ---
+ 
+ ## Simple Summary
++
+ New Sila RPC method `sil_sendTransactionToContractFunction` that parallels `sil_sendTransaction` but allows for human-readable contract function execution data to be displayed to users.
+ 
+ ## Abstract
++
+ When a dapp prompts a user to execute a smart contract function via a ProviderWallet, confirmation screens displayed in the ProviderWallet layer cannot display the human readable details of the function to be called and the arguments to be passed. This is because the Sila RPC method used for contract function execution (`sil_sendTransaction`) accepts information about what function to call in a non-human readable (and non-recoverable) format. As such, when a ProviderWallet receives this non-human readable information from a dapp, they are unable to display a human readable version since they never received one and cannot recover one from the data.
+ 
+ This creates a poor and potentially dangerous user experience. For example, a malicious dapp could swap out the `address` argument in a token contract's `transfer(address,uint256)` function and reroute the tokens intended for someone else to themselves. This sleight-of-hand would be quiet and unlikely to be picked up by a casual user glancing over the non-human readable data. By adding a new Sila RPC method (`sil_sendTransactionToContractFunction`) that accepts the function ABI, ProviderWallets can recreate and display the human readable details of contract function execution to users.
+ 
+ ## Motivation
++
+ ### ProviderWallet Definition
++
+ ProviderWallets like Metamask and Sila are hybrid software that combine an Sila API provider with an Sila wallet. This allows them to sign transactions on behalf of their users and also broadcast those signed transactions to the Sila network. ProviderWallets are used for both convenience and for the protection they give users through human readable confirmation prompts.
+ 
+ ### Existing Solutions
++
+ Much discussion has been made in the past few years on the topic of human readable Sila transaction data. Aragon's [Radspec](https://github.com/aragon/radspec) addresses this issue by requiring contract developers to amend their contract functions with human readable comments. ProviderWallets can then use Aragon's Radspec software to parse these comments from the contract code and display them to the end user - substituting in argument values where necessary. Unfortunately, this approach cannot work with contracts that do not have Radspec comments (and may require integration with IPFS).
+ 
+-[SIP 1138](https://github.com/sila-chain/SIPs/issues/1138) also addresses this issue directly but contains serious security issues - allowing untrusted dapps to generate the human readable message displayed to users. In a similar train of thought, [Sila's #2940 PR](https://github.com/sila-chain/go-sila/pull/2940) and [SIPs 191](https://github.com/sila-chain/SIPs/blob/master/SIPS/sip-191.md), [712](https://github.com/sila-chain/SIPs/blob/master/SIPS/sip-712.md) all highlight the Sila community's desire for ProviderWallets to better inform users about what data they are actually acting upon.
++SIP 1138 also addresses this issue directly but contains serious security issues - allowing untrusted dapps to generate the human readable message displayed to users. In a similar train of thought, [Sila's #2940 PR](https://github.com/sila-chain/go-sila/pull/2940) and [SIPs 191](https://github.com/sila-chain/SIPs/blob/main/SIPS/sip-191.md), [712](https://github.com/sila-chain/SIPs/blob/main/SIPS/sip-712.md) all highlight the Sila community's desire for ProviderWallets to better inform users about what data they are actually acting upon.
+ 
+ Finally, the ProviderWallet Metamask already includes some built-in magic for interactions with SRC20 contracts that allows confirmation prompts to display the intended *token* recipient and *token* value. Although this is accomplished in an ad hoc fashion for SRC20-like contracts only, the motivation is the same: users deserve better information about the execution of contract functions they are relying on ProviderWallets to perform.
+ 
+ ### Background
++
+ At one point or another, a dapp will ask a user to interact with a contract. The interaction between dapps and contracts is a large part of the Sila ecosystem and is most commonly brokered by a ProviderWallet. When a dapp asks a user to interact with a contract, it will do so by sending the `sil_sendTransaction` method name to the Sila API exposed by a ProviderWallet along with the relevant transaction data. The `data` field of the transaction data contains the information necessary for the Sila virtual machine to identify and execute the contract's function. This field has a specific formatting that is both non-human readable and non-recoverable to its human readable state.
+ 
+ The accepted format for `sil_sendTransaction`'s `data` field is the hexadecimal encoding of the first four bytes of the keccak256 digest of the function signature. This abbreviated hash is then concatenated with the ABI encoded arguments to the function. Since the keccak256 digest of the function signature cannot be converted back into the function signature, the `data` field is not only non-human readable, its non-recoverable as well. On top of this, additional insight into the concatenated argument values is further obfuscated as information about their data types are held in the function signature preimage.
+ 
+ ## Specification
++
+ This SIP proposes increasing the set of Sila RPC methods to include a new method - `sil_sendTransactionToContractFunction`. This method parallels `sil_sendTransaction` with the only difference being the inclusion of the contract function's `abi` field.
+ 
+ Parameters
+ 
+ 1. `Object` - The transaction object
+-  * `from`: `DATA`, 20 Bytes - The address the transaction is sent from.
+-  * `to`: `DATA`, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
+-  * `gas`: `QUANTITY` - (optional, default: 90000) Integer of the gas provided for the transaction execution. It will return unused gas.
+-  * `gasPrice`: `QUANTITY` - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
+-  * `value`: `QUANTITY` - (optional) Integer of the value sent with this transaction
+-  * `data`: `DATA` - The hash of the invoked method signature and encoded parameters
+-  * `abi`: `DATA` - The function ABI
+-  * `nonce`: `QUANTITY` - (optional) Integer of a nonce. This allows to overwrite your own pending transactions that use the same nonce.
++   * `from`: `DATA`, 20 Bytes - The address the transaction is sent from.
++   * `to`: `DATA`, 20 Bytes - (optional when creating new contract) The address the transaction is directed to.
++   * `gas`: `QUANTITY` - (optional, default: 90000) Integer of the gas provided for the transaction execution. It will return unused gas.
++   * `gasPrice`: `QUANTITY` - (optional, default: To-Be-Determined) Integer of the gasPrice used for each paid gas
++   * `value`: `QUANTITY` - (optional) Integer of the value sent with this transaction
++   * `data`: `DATA` - The hash of the invoked method signature and encoded parameters
++   * `abi`: `DATA` - The function ABI
++   * `nonce`: `QUANTITY` - (optional) Integer of a nonce. This allows to overwrite your own pending transactions that use the same nonce.
+ 
+ Example Parameters
++
+ ```
+   params: [{
+     "from": "0x69e6F1b01f34A702Ce63bA6EF83c64fAEC37a227",
+@@ -91,16 +99,21 @@
+ }
+ 
+ ## Rationale
++
+ This SIP's proposed `sil_sendTransactionToContractFunction` method is intended to parallel `sil_sendTransaction` as much as possible since both methods result in the same behaviour when executing a contract function. The newly introduced `abi` field is an element of the contract's ABI that corresponds to the intended function. The `data` field is the same `data` field from `sil_sendTransaction`. The `abi` field can be combined with values parsed from the `data` field to recreate human readable contract function execution information.
+ 
+ ## Implementation
++
+ The `data` field in `sil_sendTransactionToContractFunction` is the same as that required for `sil_sendTransaction` allowing the transaction to be completed via the existing mechanisms used for `sil_sendTransaction`. The input argument values can be parsed from the `data` field and since we know their types from the `abi` field, the provider wallet can use this info to encode and display the values in an appropriate human readable format. Furthermore, the hashed and truncated function signature in the `data` field can be reconstructed using the information provided in the `abi` field providing an additional check to ensure that the supplied ABI matches the `data` field.
+ 
+ ## Backwards Compatibility
+-With backwards compatibility in mind, this SIP proposes augmenting the set of Sila RPC methods with an additional method instead of mutating the existing method. Precedent for adding a new RPC method comes from [SIP 712](https://github.com/sila-chain/SIPs/blob/master/SIPS/sip-712.md) in which adding the method `sil_signTypedData` is proposed for confirmation prompt security. As an alternate approach, the `sil_sendTransaction` method could be changed to accept an additional `abi` argument, but this would break all existing code attempting to execute a contract function.
++
++With backwards compatibility in mind, this SIP proposes augmenting the set of Sila RPC methods with an additional method instead of mutating the existing method. Precedent for adding a new RPC method comes from [SIP 712](https://github.com/sila-chain/SIPs/blob/main/SIPS/sip-712.md) in which adding the method `sil_signTypedData` is proposed for confirmation prompt security. As an alternate approach, the `sil_sendTransaction` method could be changed to accept an additional `abi` argument, but this would break all existing code attempting to execute a contract function.
+ 
+ ## Security Considerations
++
+ Displaying the contract address, function name, and argument values can provide additional security to users, but it is not a guarantee that a function will execute as the user expects. A poorly implemented contract can still name its function `transfer` and accept `address` and `uint256` arguments - but there is nothing short of contract examination that will let a user know that this contract is indeed a valid SRC20 contract. This SIP does not intend to solve the larger problem around trust in a contract's code, but instead intends to give users better tools to understand exactly what is contained within the data they are broadcasting to the Sila network.
+ 
+ ## Copyright
++
+ Copyright and related rights waived via [CC0](../LICENSE.md).
+diff --git a/SIPS/sip-2593.md b/SIPS/sip-2593.md
+index 16b26e4f..07265434 100644
+--- a/SIPS/sip-2593.md
++++ b/SIPS/sip-2593.md
+@@ -9,6 +9,7 @@
+ ---
+ 
+ ## Simple Summary
++
+ The current "first price auction" fee model in Sila is inefficient and needlessly costly to users. This SIP proposes a way to replace this with a mechanism that allows dynamically priced transaction fees and efficient transaction price discovery.
+ 
+ ## Abstract
+@@ -22,7 +23,8 @@
+ !escalator algorithm price chart
+ 
+ ## Motivation
+-Sila currently prices transaction fees using a simple first-price auction, which leads to well documented inefficiencies (some of which are documented in [SIP-1559](https://github.com/sila-chain/SIPs/blob/master/SIPS/sip-1559.md)) when users are trying to estimate what price will get a transaction included in a block, especially during times of price volatility and full blocks.
++
++Sila currently prices transaction fees using a simple first-price auction, which leads to well documented inefficiencies (some of which are documented in [SIP-1559](https://github.com/sila-chain/SIPs/blob/main/SIPS/sip-1559.md)) when users are trying to estimate what price will get a transaction included in a block, especially during times of price volatility and full blocks.
+ 
+ SIP 1559 is currently being championed as an improvement for the Sila protocol, and while I agree that the gas market is very inefficient, since a change like this will affect all client and wallet implementations, the Sila community should make sure to make a selection based on solid reasoning and justifications, which I believe 1559 is currently lacking.
+ 
+@@ -34,6 +36,7 @@
+ - Users that are willing to wait for a price that may be below the market rate, vs users who value inclusion urgently and are willing to pay above market rate.
+ 
+ We should then ask:
++
+ - Is the user willing to pay the most in a given scenario also likely to have their transaction processed in a time period they find acceptable?
+ - Are users who want a good price likely to get included in a reasonable period of time? (Ideally within one block)
+ 
+@@ -78,16 +81,18 @@
+ SIP-1559 also has all the re-submission issues of the current model in situations where a user would like to pay under the current market rate, but has certain time constraints limiting their patience. The Escalator algorithm is the only strategy listed here that allows users to discover the lowest possible price given the network conditions and their time constraints.
+ 
+ ## Specification
++
+ **Client-Wide Parameters**
+-* `INITIAL_FORK_BLKNUM`: TBD
++
++- `INITIAL_FORK_BLKNUM`: TBD
+ 
+ **Transaction Parameters**
+ The transaction `gasPrice` parameter is now optional, and if excluded can be replaced by these parameters instead:
+ 
+-* `START_PRICE`: The lowest price that the user would like to pay for the transaction.
+-* `START_TIME`: The first time that this transaction is valid at.
+-* `MAX_PRICE`: The maximum price the sender would be willing to pay to have this transaction processed.
+-* `MAX_TIME`: The time at which point the user's `MAX_PRICE` is achieved. The transaction remains valid after this time at that price.
++- `START_PRICE`: The lowest price that the user would like to pay for the transaction.
++- `START_TIME`: The first time that this transaction is valid at.
++- `MAX_PRICE`: The maximum price the sender would be willing to pay to have this transaction processed.
++- `MAX_TIME`: The time at which point the user's `MAX_PRICE` is achieved. The transaction remains valid after this time at that price.
+ 
+ **Proposal**
+ 
+@@ -95,10 +100,11 @@
+ 
+ When processing a transaction with the new pricing parameters, miners now receive a fee based off of the following linear function, where `BLOCK` is the current block number:
+ 
+-* IF `BLOCK > MAX_TIME` then `TX_FEE = MAX_PRICE`.
+-* `TX_FEE = START_PRICE + ((MAX_PRICE - START_PRICE) / (MAX_TIME - START_TIME) * (BLOCK - START_TIME))`
++- IF `BLOCK > MAX_TIME` then `TX_FEE = MAX_PRICE`.
++- `TX_FEE = START_PRICE + ((MAX_PRICE - START_PRICE) / (MAX_TIME - START_TIME) * (BLOCK - START_TIME))`
+ 
+ As a JavaScript function:
++
+ ```javascript
+ function txFee (startTime, startPrice, maxTime, maxPrice, currentTime) {
+ 
+@@ -117,14 +123,19 @@
+ Since a current `gasPrice` transaction is effectively a flat-escalated transaction bid, it is entirely compatible with this model, and so there is no concrete requirement to deprecate current transaction processing logic, allowing cold wallets and hardware wallets to continue working for the foreseeable future.
+ 
+ ## Test Cases
++
+ TBD
+ 
+ ## Implementation
++
+ TBD
+ 
+ ## Security Considerations
++
+ The security considerations for this SIP are:
++
+ - None currently known.
+ 
+ ## Copyright
++
+ Copyright and related rights waived via [CC0](../LICENSE.md).
+diff --git a/SIPS/sip-2938.md b/SIPS/sip-2938.md
+index 51a08a96..f048f123 100644
+--- a/SIPS/sip-2938.md
++++ b/SIPS/sip-2938.md
+@@ -163,9 +163,9 @@
+ 
+ ### Single Tenant+
+ 
+-If the [indestructible contracts SIP](http://github.com/sila-chain/SIPs/pull/2937) is added, Single Tenant AA can be adapted to allow for `DELEGATECALL` during transaction verification: during execution of a new AA transaction, external state access that reads code (`EXTCODESIZE`, `EXTCODEHASH`, `EXTCODECOPY`, `CALLCODE`, `DELEGATECALL`) of any contract whose first byte is the `SET_INDESTRUCTIBLE` opcode is no longer banned. However, calls to anything but the `target` or a precompile that change the `callee` (i.e., calls other than `CALLCODE` and `DELEGATECALL`) are still not permitted.
++If the indestructible contracts SIP is added, Single Tenant AA can be adapted to allow for `DELEGATECALL` during transaction verification: during execution of a new AA transaction, external state access that reads code (`EXTCODESIZE`, `EXTCODEHASH`, `EXTCODECOPY`, `CALLCODE`, `DELEGATECALL`) of any contract whose first byte is the `SET_INDESTRUCTIBLE` opcode is no longer banned. However, calls to anything but the `target` or a precompile that change the `callee` (i.e., calls other than `CALLCODE` and `DELEGATECALL`) are still not permitted.
+ 
+-If the [IS_STATIC SIP](http://github.com/sila-chain/SIPs/pull/2975) is added, the list of allowed prefixes can be extended to allow a prefix that enables incoming static calls but not state-changing calls.
++If the IS_STATIC SIP is added, the list of allowed prefixes can be extended to allow a prefix that enables incoming static calls but not state-changing calls.
+ 
+ The list of allowed prefixes can also be extended to enable other benign use cases (eg. logging incoming payments).
+ 
+@@ -177,7 +177,7 @@
+ 
+ In a later stage, we can add support for multiple pending transactions per account in the mempool. The main challenge here is that a single transaction can potentially cause state changes that invalidate all other transactions to that same account. Additionally, if we naively prioritize transactions by gasprice, there is an attack vector where the user willing to pay the highest gasprice publishes many (mutually exclusive) versions of their transaction with small alterations, thereby pushing everyone else's transactions out of the mempool.
+ 
+-Here is a sketch of a strategy for mitigating this problem. We would require incoming transactions to contain an [SIP-2930](https://github.com/sila-chain/SIPs/blob/master/SIPS/sip-2930.md)-style access list detailing the storage slots that the transaction reads or modifies, and make it binding; that is, accesses outside the access list would be invalid. A transaction would only be included in the mempool if its access list is disjoint from the access lists of other transactions in the mempool (or if its gasprice is higher). An alternative way to think about this is to have per-storage-slot mempools instead of just per-account mempools, except a transaction could be part of multiple per-storage-slot mempools (if desired it could be capped to eg. 5 storage slots).
++Here is a sketch of a strategy for mitigating this problem. We would require incoming transactions to contain an [SIP-2930](https://github.com/sila-chain/SIPs/blob/main/SIPS/sip-2930.md)-style access list detailing the storage slots that the transaction reads or modifies, and make it binding; that is, accesses outside the access list would be invalid. A transaction would only be included in the mempool if its access list is disjoint from the access lists of other transactions in the mempool (or if its gasprice is higher). An alternative way to think about this is to have per-storage-slot mempools instead of just per-account mempools, except a transaction could be part of multiple per-storage-slot mempools (if desired it could be capped to eg. 5 storage slots).
+ 
+ Note also that multi-tenant AA will almost certainly require allowing miners to edit the nonces of incoming transactions to put them into sequence, with the result that the final hash of a transaction is unpredictable at publication time. Clients will need to explicitly work around this.
+ 
+@@ -225,7 +225,7 @@
+ 
+ ### AA transactions must call contracts with prefix
+ 
+-The prelude is used to ensure that *only* AA transactions can call the contract. This is another measure taken to ensure the invariant described above. If this check did not occur, it would be possible for a transaction originating outside some AA account X to call into X and make a storage change, forcing transactions targeting that account to be reprocessed at the cost of a mere 5000 gas.
++The prelude is used to ensure that _only_ AA transactions can call the contract. This is another measure taken to ensure the invariant described above. If this check did not occur, it would be possible for a transaction originating outside some AA account X to call into X and make a storage change, forcing transactions targeting that account to be reprocessed at the cost of a mere 5000 gas.
+ 
+ ### Multi-tenant AA
+ 
+@@ -265,9 +265,11 @@
+ AA contracts may not have replay protection unless they build it in explicitly; this can be done with the `CHAINID (0x46)` opcode introduced in [SIP 1344](./sip-1344.md).
+ 
+ ## Test Cases
++
+ See: [https://github.com/quilt/tests/tree/account-abstraction](https://github.com/quilt/tests/tree/account-abstraction)
+ 
+ ## Implementation
++
+ See: 
+ 
+ ## Security Considerations
+@@ -285,4 +287,5 @@
+ Denial-of-Service attacks are difficult to defend against, due to the difficulty in identifying sybils within a peer list. At any moment, one may decide (or be bribed) to initiate an attack. This is not a problem that Account Abstraction introduces. It can be accomplished against existing clients today by inundating a target with transactions whose signatures are invalid. However, due to the increased allotment of validation work allowed by AA, it's important to bound the amount of computation an adversary can force a client to expend with invalid transactions. For this reason, it's best for the miner to follow the recommended mining strategies.
+ 
+ ## Copyright
++
+ Copyright and related rights waived via [CC0](../LICENSE.md).
+diff --git a/SIPS/sip-3332.md b/SIPS/sip-3332.md
+index e1cc70ca..0766c3e6 100644
+--- a/SIPS/sip-3332.md
++++ b/SIPS/sip-3332.md
+@@ -47,7 +47,7 @@
+ 
+ ### Forwards Compatibility
+ 
+-[SIP-1559](https://sips.sila.org/SIPS/sip-1559) plans to change the fee market in a number of ways. Most notably is the creation of a base fee that is burned. In this context an "inclusion fee" still exists as a part of the total fee. Consider the following two cases:
++[SIP-1559](https://sips.silachain.org/SIPS/sip-1559) plans to change the fee market in a number of ways. Most notably is the creation of a base fee that is burned. In this context an "inclusion fee" still exists as a part of the total fee. Consider the following two cases:
+ 
+ #### Block sizes are increasing (all available gas is being consumed)
+ 
+@@ -61,7 +61,7 @@
+ 
+ Post SIP-1559 `MEDGASPRICE (0x46)` should return the median `effective_gas_price` of the previous block.
+ 
+-[SIP-3198](https://sips.sila.org/SIPS/sip-3198) is required for the above strategies to be implemented. With the inclusion of `BASEFEE (0x48)` a contract can subtract the `base_fee_per_gas` from the `effective_gas_price` to determine the inclusion fee per gas being paid for the transaction and thus implement an upper bound.
++[SIP-3198](https://sips.silachain.org/SIPS/sip-3198) is required for the above strategies to be implemented. With the inclusion of `BASEFEE (0x48)` a contract can subtract the `base_fee_per_gas` from the `effective_gas_price` to determine the inclusion fee per gas being paid for the transaction and thus implement an upper bound.
+ 
+ ## Specification
+ 
+diff --git a/SIPS/sip-3403.md b/SIPS/sip-3403.md
+index a6bc6840..ff01933c 100644
+--- a/SIPS/sip-3403.md
++++ b/SIPS/sip-3403.md
+@@ -26,16 +26,16 @@
+ 
+ There are two typical ways to implement mutexes: '0-1-0' and '1-2-1. Let's see how they differ
+ 
+-- '0-1-0':
+-  - Istanbul: 1612
+-  - Berlin: 212
+-  - NoRefund: 20112
+-  - SIP-3403: 1112
+-- '1-2-1':
+-  - Istanbul: 1612
+-  - Berlin: 212
+-  - NoRefund: 3012
+-  - SIP-3403: 3012
++* '0-1-0':
++  * Istanbul: 1612
++  * Berlin: 212
++  * NoRefund: 20112
++  * SIP-3403: 1112
++* '1-2-1':
++  * Istanbul: 1612
++  * Berlin: 212
++  * NoRefund: 3012
++  * SIP-3403: 3012
+ 
+ 
+ **Note**: In reality, there are never a negative gas cost, since the refund is capped at 0.5 * gasUsed. 
+@@ -54,7 +54,7 @@
+ For blocks where `block.number >= FORK_BLOCK`, the following changes apply.
+ 
+ 1. Remove the `SELFDESTRUCT` refund.
+-2. Remove the `SSTORE` refund in all cases except for one specific case: if the _new value_ and _original value_ of the storage slot both equal 0 but the _current value_ does not (those terms being defined as in [SIP-1283](https://sips.sila.org/SIPS/sip-1283)), refund `SSTORE_REFUND_GAS` gas.
++2. Remove the `SSTORE` refund in all cases except for one specific case: if the _new value_ and _original value_ of the storage slot both equal 0 but the _current value_ does not (those terms being defined as in [SIP-1283](https://sips.silachain.org/SIPS/sip-1283)), refund `SSTORE_REFUND_GAS` gas.
+ 
+ ## Rationale
+ 
+@@ -131,4 +131,5 @@
+ The maximum amount of gas that can be spent on execution in a block is limited to the gas limit, if we do not count zero-to-nonzero SSTOREs that were later reset back to zero. It is okay to not count those, because if such an SSTORE is reset, storage is not expanded and the client does not need to actually adjust the Merke tree; the gas consumption is refunded, but the effort normally required by the client to process those opcodes is also cancelled. **Clients should make sure to not do a storage write if `new_value = original_value`; this was a prudent optimization since the beginning of Sila but it becomes more important now.**
+ 
+ ## Copyright
++
+ Copyright and related rights waived via [CC0](../LICENSE.md).
+diff --git a/SIPS/sip-3534.md b/SIPS/sip-3534.md
+index eff34ae1..4d078d72 100644
+--- a/SIPS/sip-3534.md
++++ b/SIPS/sip-3534.md
+@@ -62,6 +62,7 @@
+ - `ANNOTATION_PREFIX`s are defined for Subclasses as octal-derived positive integers, limited to the set `2^0,2^1,2^2,2^3,2^4,2^5,2^6,2^7`.
+ 
+ The `chainContext` value should be of the form `ANNOTATION_COMPOSITE_PREFIX || [{subclass value}...]`, where 
++
+ - `...` means "zero or more of the things to the left," and 
+ - `||` denotes the byte/byte-array concatenation operator.
+ 
+@@ -83,6 +84,7 @@
+ 4. `EXPIRY`
+ 
+ As above, the `ANNOTATION_COMPOSITE_PREFIX` should be the sum of the designated subclass' `ANNOTATION_PREFIX`s.
++
+ ### Subclasses
+ 
+ - An `ANNOTATION_PREFIX` value is used to represent each of the available context subclasses.
+@@ -224,7 +226,8 @@
+ 
+ 
+ ### SIP-2930 Inheritance
+-The [SIP-2930 Optional Access List Type Transaction](https://sips.sila.org/SIPS/sip-2930) is used as an assumed "base" transaction type for this proposal. 
++
++The [SIP-2930 Optional Access List Type Transaction](https://sips.silachain.org/SIPS/sip-2930) is used as an assumed "base" transaction type for this proposal. 
+ However, this is NOT a conceptual dependency; the included `accessList` portion of this proposal (the only differential from post-SIP-155 legacy transaction fields) can readily be removed. 
+ Standing on the shoulders of SIP-2930 is only intended to support and further the adoption of next-generation transactions.
+ 
+diff --git a/SIPS/sip-4938.md b/SIPS/sip-4938.md
+index b85434c7..4cfc07fa 100644
+--- a/SIPS/sip-4938.md
++++ b/SIPS/sip-4938.md
+@@ -2,7 +2,7 @@
+ sip: 4938
+ title: "sil/67 - Removal of GetNodeData"
+ description: "Remove GetNodeData and NodeData messages from the wire protocol"
+-author: Marius van der Wijden (@MariusVanDerWijden), Felix Lange <fjl@sila.org>, Gary Rong <garyrong@sila.org>
++author: Marius van der Wijden (@MariusVanDerWijden), Felix Lange, Gary Rong
+ discussions-to: https://sila-magicians.org/t/sip-4938-removal-of-getnodedata/8893
+ status: Final
+ type: Standards Track
+diff --git a/SIPS/sip-7329.md b/SIPS/sip-7329.md
+index a5906ae7..aa85beca 100644
+--- a/SIPS/sip-7329.md
++++ b/SIPS/sip-7329.md
+@@ -54,9 +54,9 @@
+    migrated to a new repo. The history should be intact so that repo should be
+    forked of this one with the non-SRCs removed. 
+ 2. The new SRCs repository goes live and includes the changes from the script.
+-3. Setup srcs.sila.org subdomain and update the CI to point to the SRCs
++3. Setup srcs.silachain.org subdomain and update the CI to point to the SRCs
+    repo.
+-4. Set up a redirect for SRCs on sips.sila.org to go to the new website.
++4. Set up a redirect for SRCs on sips.silachain.org to go to the new website.
+ 5. Create a unified document for editors to assign SIP/SRC numbers. SIPs and
+    SRCs will no longer be based on an initial PR number but on a number
+    incremented by the SIP editors of their respective repositories. SIPs will be
+@@ -253,7 +253,7 @@
+ 
+ ### Old Links
+ 
+-Old SRC links pointing to the old url `https://sips.sila.org/` will continue
++Old SRC links pointing to the old url `https://sips.silachain.org/` will continue
+ to work. Redirect instructions will be put into place to redirect to the new SRC
+ repos for their corresponding location.
+ 
+diff --git a/SIPS/sip-7642.md b/SIPS/sip-7642.md
+index 77b94804..5fbf6506 100644
+--- a/SIPS/sip-7642.md
++++ b/SIPS/sip-7642.md
+@@ -2,7 +2,7 @@
+ sip: 7642
+ title: sil/69 - history expiry and simpler receipts
+ description: Adds history serving window and removes bloom filter in receipt
+-author: Marius van der Wijden (@MariusVanDerWijden), Felix Lange <fjl@sila.org>, Ahmad Bitar (@smartprogrammer93) <smartprogrammer@windowslive.com>
++author: Marius van der Wijden (@MariusVanDerWijden), Felix Lange, Ahmad Bitar (@smartprogrammer93) <smartprogrammer@windowslive.com>
+ discussions-to: https://sila-magicians.org/t/sil-70-drop-pre-merge-fields-from-sil-protocol/19005
+ status: Final
+ type: Standards Track
+diff --git a/SIPS/sip-7862.md b/SIPS/sip-7862.md
+index 316b0ae3..336c24d4 100644
+--- a/SIPS/sip-7862.md
++++ b/SIPS/sip-7862.md
+@@ -2,7 +2,7 @@
+ sip: 7862
+ title: Delayed State Root
+ description: Separate state root computation from block validation
+-author: Charlie Noyes <charlie@paradigm.xyz>, Dan Robinson <dan@paradigm.xyz>, Justin Drake <justin@sila.org>, Toni Wahrstätter (@nerolation)
++author: Charlie Noyes <charlie@paradigm.xyz>, Dan Robinson <dan@paradigm.xyz>, Justin Drake, Toni Wahrstätter (@nerolation)
+ discussions-to: https://sila-magicians.org/t/sip-7862-delayed-execution-layer-state-root/22559
+ status: Draft
+ type: Standards Track
+@@ -143,7 +143,7 @@
+ 2. Use the BAL to parallelize state root computation for block `n`
+ 3. Include that root in block `n+1`
+ 
+-Without this SIP, BALs don’t help with state root computation: the root is only known after execution finishes, which is too late to use within the same slot. With this proposal, builders can start constructing a block without fully executing the previous one, by applying the BAL state diff to the slot’s pre-state.
++Without this SIP, BALs don't help with state root computation: the root is only known after execution finishes, which is too late to use within the same slot. With this proposal, builders can start constructing a block without fully executing the previous one, by applying the BAL state diff to the slot's pre-state.
+ 
+ ### Light Client Impact
+ 
+diff --git a/SIPS/sip-7872.md b/SIPS/sip-7872.md
+index 1a199984..ccb33872 100644
+--- a/SIPS/sip-7872.md
++++ b/SIPS/sip-7872.md
+@@ -2,7 +2,7 @@
+ sip: 7872
+ title: Max blob flag for local builders
+ description: Adds a flag to set the maximum number of blobs a local builder will put in a block
+-author: Francesco D'Amato <francesco.damato@sila.org>, Kevaundray Wedderburn (@kevaundray), Toni Wahrstätter (@nerolation), Alex Stokes (@ralexstokes), Ben Adams (@benaadams), Gajinder Singh (@g11tech), Dustin (@tersec)
++author: Francesco D'Amato, Kevaundray Wedderburn (@kevaundray), Toni Wahrstätter (@nerolation), Alex Stokes (@ralexstokes), Ben Adams (@benaadams), Gajinder Singh (@g11tech), Dustin (@tersec)
+ discussions-to: https://sila-magicians.org/t/max-blob-flags-for-local-builders/22734
+ status: Review
+ type: Meta
+diff --git a/SIPS/sip-7917.md b/SIPS/sip-7917.md
+index d9a34a4e..c7704841 100644
+--- a/SIPS/sip-7917.md
++++ b/SIPS/sip-7917.md
+@@ -2,7 +2,7 @@
+ sip: 7917
+ title: Deterministic proposer lookahead
+ description: Pre-calculate and store a deterministic proposer lookahead in the beacon state at the start of every epoch
+-author: Lin Oshitani (@linoscope) <lin@nethermind.io>, Justin Drake (@JustinDrake) <justin@sila.org>
++author: Lin Oshitani (@linoscope) <lin@nethermind.io>, Justin Drake (@JustinDrake)
+ discussions-to: https://sila-magicians.org/t/sip-7917-deterministic-proposer-lookahead/23259
+ status: Final
+ type: Standards Track
+@@ -50,7 +50,7 @@
+     return state.proposer_lookahead[state.slot % SLOTS_PER_EPOCH]
+ ```
+ 
+-At the epoch boundary, the `proposer_lookahead` is updated by shifting out the current epoch’s lookahead and appending the new one.
++At the epoch boundary, the `proposer_lookahead` is updated by shifting out the current epoch's lookahead and appending the new one.
+ 
+ ```python
+ def process_epoch(state: BeaconState) -> None:
+@@ -100,13 +100,13 @@
+ 
+ ### Single Secret Leader Election Compatibility
+ 
+-In the future, we may introduce a Single Secret Leader Election (SSLE) mechanism in which only the selected validator knows their role until they propose a block. However, current SSLE designs still rely on a lookahead, albeit an encrypted one. In such designs, we could reuse the `proposer_lookahead` field by changing its type to something like `List[EncryptedValidatorIndex]`. And if a construction were to remove lookahead entirely, we could simply set `proposer_lookahead` to an empty list, meaning this wouldn’t be a blocker.
++In the future, we may introduce a Single Secret Leader Election (SSLE) mechanism in which only the selected validator knows their role until they propose a block. However, current SSLE designs still rely on a lookahead, albeit an encrypted one. In such designs, we could reuse the `proposer_lookahead` field by changing its type to something like `List[EncryptedValidatorIndex]`. And if a construction were to remove lookahead entirely, we could simply set `proposer_lookahead` to an empty list, meaning this wouldn't be a blocker.
+ 
+ That said, any such changes would introduce additional complexity around preconfirmation protocols, but that complexity arises regardless of this SIP. Furthermore, APS (Attester Proposer Separation) envisions more sophisticated (i.e., more DDoS‑resistant) execution proposers, reducing the need for SSLE.
+ 
+ ### Added Computation at the Epoch Boundary
+ 
+-Before this SIP, consensus clients only needed to compute the current proposer’s index at each slot. With the changes introduced by this SIP, they must calculate the entire epoch’s proposer schedule at the start of each epoch. However, computing the proposer index is light, involving sampling validators until we reach a validator with sufficient effective balance to be selected as a proposer. Still, testing is needed to confirm that these additional calculations do not create performance bottlenecks in practice.
++Before this SIP, consensus clients only needed to compute the current proposer's index at each slot. With the changes introduced by this SIP, they must calculate the entire epoch's proposer schedule at the start of each epoch. However, computing the proposer index is light, involving sampling validators until we reach a validator with sufficient effective balance to be selected as a proposer. Still, testing is needed to confirm that these additional calculations do not create performance bottlenecks in practice.
+ 
+ ## Backwards Compatibility
+ 
+@@ -120,7 +120,7 @@
+ 
+ ### Malicious Lookahead Alteration
+ 
+-A critical consideration for any proposer election mechanism is preventing validators from manipulating lookahead to gain an unfair advantage. This proposal does not increase the chances of such attacks, as we do not alter the “RANDAO delay” used in the lookahead—the lookahead of epoch `N` is still determined by the RANDAO of epoch `N - MIN_SEED_LOOKAHEAD - 1` (which becomes available at the start of epoch `N - MIN_SEED_LOOKAHEAD`). The only difference is that it changes the “effective balances delay”: rather than using the effective balances (EB) at the start of epoch `N`, it now uses the EB at the start of epoch `N - MIN_SEED_LOOKAHEAD`.
++A critical consideration for any proposer election mechanism is preventing validators from manipulating lookahead to gain an unfair advantage. This proposal does not increase the chances of such attacks, as we do not alter the "RANDAO delay" used in the lookahead—the lookahead of epoch `N` is still determined by the RANDAO of epoch `N - MIN_SEED_LOOKAHEAD - 1` (which becomes available at the start of epoch `N - MIN_SEED_LOOKAHEAD`). The only difference is that it changes the "effective balances delay": rather than using the effective balances (EB) at the start of epoch `N`, it now uses the EB at the start of epoch `N - MIN_SEED_LOOKAHEAD`.
+ 
+ Furthermore, by aligning the RANDAO and effective balances in this way, the proposal removes any chance of validators adjusting their EB after seeing the RANDAO outcome, which is an attack vector to consider. No such attack has been found so far, but this change removes the possibility, hence simplifying the security analysis.
+ 
+diff --git a/SIPS/sip-7975.md b/SIPS/sip-7975.md
+index cd313a86..978cb6fa 100644
+--- a/SIPS/sip-7975.md
++++ b/SIPS/sip-7975.md
+@@ -2,7 +2,7 @@
+ sip: 7975
+ title: sil/70 - partial block receipt lists
+ description: Adds a facility for paginating block receipts in the p2p protocol
+-author: Felix Lange <fjl@sila.org>, Jochem Brouwer (@jochem-brouwer), Giulio Rebuffo (@Giulio2002)
++author: Felix Lange, Jochem Brouwer (@jochem-brouwer), Giulio Rebuffo (@Giulio2002)
+ discussions-to: https://sila-magicians.org/t/sip-7975-sil-70-partial-block-receipt-lists/24658
+ status: Review
+ type: Standards Track
+diff --git a/SIPS/sip-8025.md b/SIPS/sip-8025.md
+index d0b01e04..87c7218e 100644
+--- a/SIPS/sip-8025.md
++++ b/SIPS/sip-8025.md
+@@ -2,7 +2,7 @@
+ sip: 8025
+ title: Optional Execution Proofs
+ description: Introducing optional execution proofs on the consensus layer
+-author: Kevaundray Wedderburn (@kevaundray), Justin Drake (@JustinDrake) <justin@sila.org>, Ignacio Hagopian (@jsign), Han (@han0110), Francesco Risitano (@frisitano), Cody Gunton (@codygunton)
++author: Kevaundray Wedderburn (@kevaundray), Justin Drake (@JustinDrake), Ignacio Hagopian (@jsign), Han (@han0110), Francesco Risitano (@frisitano), Cody Gunton (@codygunton)
+ discussions-to: https://sila-magicians.org/t/sip-optional-execution-proofs/25500
+ status: Draft
+ type: Standards Track
+diff --git a/SIPS/sip-8053.md b/SIPS/sip-8053.md
+index 5f57b8bc..f8e0d62e 100644
+--- a/SIPS/sip-8053.md
++++ b/SIPS/sip-8053.md
+@@ -59,7 +59,7 @@
+     output: Bytes
+     accounts_to_delete: Set[Address]
+     return_data: Bytes
+-    error: Optional[EthereumException]
++    error: Optional[SilaException]
+     accessed_addresses: Set[Address]
+     accessed_storage_keys: Set[Tuple[Address, Bytes32]]
+ ```
+diff --git a/SIPS/sip-8079.md b/SIPS/sip-8079.md
+index e3513a7a..8ea9ecd0 100644
+--- a/SIPS/sip-8079.md
++++ b/SIPS/sip-8079.md
+@@ -2,7 +2,7 @@
+ sip: 8079
+ title: Native rollups
+ description: Expose Sila's STF as a precompile for rollups to use
+-author: Luca Donno (@lucadonnoh) <donnoh@l2beat.com>, Justin Drake (@JustinDrake) <justin@sila.org>
++author: Luca Donno (@lucadonnoh) <donnoh@l2beat.com>, Justin Drake (@JustinDrake)
+ discussions-to: https://sila-magicians.org/t/sip-8079-native-rollups/26565
+ status: Draft
+ type: Standards Track
+diff --git a/SIPS/sip-8282.md b/SIPS/sip-8282.md
+index e02e0203..6234580c 100644
+--- a/SIPS/sip-8282.md
++++ b/SIPS/sip-8282.md
+@@ -2,7 +2,7 @@
+ sip: 8282
+ title: Builder Execution Requests
+ description: Predeploy builder deposit and exit request contracts for SIP-7732 builders on the SIP-7685 request bus
+-author: Cayman (@wemeetagain), Nico Flaig <nflaig@protonmail.com>, Felix Lange <fjl@sila.org>, Justin Traglia <jtraglia@sila.org>
++author: Cayman (@wemeetagain), Nico Flaig <nflaig@protonmail.com>, Felix Lange, Justin Traglia
+ discussions-to: https://sila-magicians.org/t/sip-8282-builder-execution-requests/28699
+ status: Review
+ type: Standards Track
+diff --git a/SIPS/sip-969.md b/SIPS/sip-969.md
+index 076ca2c2..db20099c 100644
+--- a/SIPS/sip-969.md
++++ b/SIPS/sip-969.md
+@@ -158,7 +158,7 @@
+ `0x01000193`, using the following snippet.
+ 
+ ``` c
+-// https://sips.sila.org/SIPS/sip-969
++// https://sips.silachain.org/SIPS/sip-969
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
+diff --git a/_config.yml b/_config.yml
+index ac0afcd4..5b3248d5 100644
+--- a/_config.yml
++++ b/_config.yml
+@@ -17,7 +17,7 @@
+ description: >-
+   Sila Improvement Proposals (SIPs) describe standards for the Sila
+   platform, such as core protocol specifications.
+-url: "https://sips.sila.org"
++url: "https://sips.silachain.org"
+ "baseurl": ""
+ github_username:  sila
+ repository: sila-chain/SIPs
+diff --git a/_layouts/sip.html b/_layouts/sip.html
+index 64645d57..9597700a 100644
+--- a/_layouts/sip.html
++++ b/_layouts/sip.html
+@@ -72,7 +72,7 @@
+         <use xlink:href="#bi-chat"/>
+       </svg>
+     </a>
+-    <a href="{{site.github.repository_url}}/blob/master/{{page.path}}" class="no-underline">
++    <a href="{{site.github.repository_url}}/blob/main/{{page.path}}" class="no-underline">
+       <svg role="img" aria-label="Source" class="inline-svg" xmlns="https://www.w3.org/2000/svg" viewBox="0 0 16 16">
+         <use xlink:href="#bi-code"/>
+       </svg>
+@@ -141,7 +141,7 @@
+   IEEE specification for reference formatting:
+   https://ieee-dataport.org/sites/default/files/analysis/27/IEEE%20Citation%20Guidelines.pdf
+   {% endcomment %}
+-  <p>{% include authorlist.html authors=page.author %}, "{{ doc_title }}," <em>Sila Improvement Proposals</em>, no. {{ page.sip | xml_escape }}, {{ page.created | date: "%B %Y" }}. Available: https://sips.sila.org/SIPS/sip-{{ page.sip | xml_escape }}.</p>
++  <p>{% include authorlist.html authors=page.author %}, "{{ doc_title }}," <em>Sila Improvement Proposals</em>, no. {{ page.sip | xml_escape }}, {{ page.created | date: "%B %Y" }}. Available: https://sips.silachain.org/SIPS/sip-{{ page.sip | xml_escape }}.</p>
+ </div>
+ {% comment %}
+ Article schema specification:
+diff --git a/assets/sip-3267/contracts/SRC1155/ISRC1155.sol b/assets/sip-3267/contracts/SRC1155/ISRC1155.sol
+index f011ea59..1c35d628 100644
+--- a/assets/sip-3267/contracts/SRC1155/ISRC1155.sol
++++ b/assets/sip-3267/contracts/SRC1155/ISRC1155.sol
+@@ -5,7 +5,7 @@
+ 
+ /**
+     @title SRC-1155 Multi Token Standard basic interface
+-    @dev See https://sips.sila.org/SIPS/sip-1155
++    @dev See https://sips.silachain.org/SIPS/sip-1155
+  */
+ abstract contract ISRC1155 is ISRC165 {
+     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
+diff --git a/assets/sip-3267/contracts/SRC1155/ISRC1155TokenReceiver.sol b/assets/sip-3267/contracts/SRC1155/ISRC1155TokenReceiver.sol
+index 007f16e9..fbc10d68 100644
+--- a/assets/sip-3267/contracts/SRC1155/ISRC1155TokenReceiver.sol
++++ b/assets/sip-3267/contracts/SRC1155/ISRC1155TokenReceiver.sol
+@@ -5,7 +5,7 @@
+ 
+ /**
+     @title SRC-1155 Multi Token Receiver Interface
+-    @dev See https://sips.sila.org/SIPS/sip-1155
++    @dev See https://sips.silachain.org/SIPS/sip-1155
+ */
+ abstract contract ISRC1155TokenReceiver is ISRC165 {
+ 
+diff --git a/assets/sip-3267/contracts/SRC1155/README.md b/assets/sip-3267/contracts/SRC1155/README.md
+index 40863af2..afef46ee 100644
+--- a/assets/sip-3267/contracts/SRC1155/README.md
++++ b/assets/sip-3267/contracts/SRC1155/README.md
+@@ -7,6 +7,6 @@
+       - ISRC1155TokenReceiver
+ ---
+ 
+-This set of interfaces and contracts are all related to the [SRC1155 Multi Token Standard](https://sips.sila.org/SIPS/sip-1155).
++This set of interfaces and contracts are all related to the [SRC1155 Multi Token Standard](https://sips.silachain.org/SIPS/sip-1155).
+ 
+ The SIP consists of two interfaces which fulfill different roles, found here as `ISRC1155`  and `ISRC1155TokenReceiver`. Only `ISRC1155` is required for a contract to be SRC1155 compliant. The basic functionality is implemented in `SRC1155`.
+diff --git a/assets/sip-3267/contracts/SRC1155/SRC1155.sol b/assets/sip-3267/contracts/SRC1155/SRC1155.sol
+index 450acacf..433b7aa7 100644
+--- a/assets/sip-3267/contracts/SRC1155/SRC1155.sol
++++ b/assets/sip-3267/contracts/SRC1155/SRC1155.sol
+@@ -13,7 +13,7 @@
+ /**
+  *
+  * @dev Implementation of the basic standard multi-token.
+- * See https://sips.sila.org/SIPS/sip-1155
++ * See https://sips.silachain.org/SIPS/sip-1155
+  * Originally based on code by Enjin: https://github.com/enjin/src-1155
+  *
+  * _Available since v3.1._
+@@ -67,7 +67,7 @@
+      *
+      * This implementation returns the same URI for *all* token types. It relies
+      * on the token type ID substitution mechanism
+-     * https://sips.sila.org/SIPS/sip-1155#metadata[defined in the SIP].
++     * https://sips.silachain.org/SIPS/sip-1155#metadata[defined in the SIP].
+      *
+      * Clients calling this function must replace the `\{id\}` substring with the
+      * actual token type ID.
+@@ -210,7 +210,7 @@
+     /**
+      * @dev Sets a new URI for all token types, by relying on the token type ID
+      * substitution mechanism
+-     * https://sips.sila.org/SIPS/sip-1155#metadata[defined in the SIP].
++     * https://sips.silachain.org/SIPS/sip-1155#metadata[defined in the SIP].
+      *
+      * By this mechanism, any occurrence of the `\{id\}` substring in either the
+      * URI or any of the amounts in the JSON file at said URI will be replaced by
+diff --git a/assets/sip-7885/op-sila/cgo/contracts.go b/assets/sip-7885/op-sila/cgo/contracts.go
+index bc20411d..c16f0b02 100644
+--- a/assets/sip-7885/op-sila/cgo/contracts.go
++++ b/assets/sip-7885/op-sila/cgo/contracts.go
+@@ -554,7 +554,7 @@
+ 		// SIP-2565 (Berlin fork) has three changes:
+ 		//
+ 		// 1. Different multComplexity (inlined here)
+-		// in SIP-2565 (https://sips.sila.org/SIPS/sip-2565):
++		// in SIP-2565 (https://sips.silachain.org/SIPS/sip-2565):
+ 		//
+ 		// def mult_complexity(x):
+ 		//    ceiling(x/8)^2
+diff --git a/assets/sip-7885/op-sila/nocgo/core/vm/contracts.go b/assets/sip-7885/op-sila/nocgo/core/vm/contracts.go
+index 65f0478e..788d7519 100644
+--- a/assets/sip-7885/op-sila/nocgo/core/vm/contracts.go
++++ b/assets/sip-7885/op-sila/nocgo/core/vm/contracts.go
+@@ -583,7 +583,7 @@
+ 		// SIP-2565 (Berlin fork) has three changes:
+ 		//
+ 		// 1. Different multComplexity (inlined here)
+-		// in SIP-2565 (https://sips.sila.org/SIPS/sip-2565):
++		// in SIP-2565 (https://sips.silachain.org/SIPS/sip-2565):
+ 		//
+ 		// def mult_complexity(x):
+ 		//    ceiling(x/8)^2
+diff --git a/index.html b/index.html
+index 6e1e00d8..754106b7 100644
+--- a/index.html
++++ b/index.html
+@@ -15,7 +15,7 @@
+ <p>Sila Improvement Proposals (SIPs) describe standards for the Sila platform, including core protocol specifications, client APIs, and contract standards. Network upgrades are discussed separately in the <a target="_blank" href="https://github.com/sila-chain/pm/">Sila Project Management</a> repository.</p>
+ 
+ <h2>Contributing</h2>
+-<p>First review <a href="SIPS/sip-1">SIP-1</a>. Then clone the repository and add your SIP to it. There is a <a href="https://github.com/sila-chain/SIPs/blob/master/sip-template.md?plain=1">template SIP here</a>. Then submit a Pull Request to Sila's <a href="https://github.com/sila-chain/SIPs">SIPs repository</a>.</p>
++<p>First review <a href="SIPS/sip-1">SIP-1</a>. Then clone the repository and add your SIP to it. There is a <a href="https://github.com/sila-chain/SIPs/blob/main/sip-template.md?plain=1">template SIP here</a>. Then submit a Pull Request to Sila's <a href="https://github.com/sila-chain/SIPs">SIPs repository</a>.</p>
+ 
+ <h2>SIP status terms</h2>
+ <ul>
+diff --git a/sip-template.md b/sip-template.md
+index ebbed544..fb3dae87 100644
+--- a/sip-template.md
++++ b/sip-template.md
+@@ -11,7 +11,7 @@
+ ---
+ 
+ <!--
+-  READ SIP-1 (https://sips.sila.org/SIPS/sip-1) BEFORE USING THIS TEMPLATE!
++  READ SIP-1 (https://sips.silachain.org/SIPS/sip-1) BEFORE USING THIS TEMPLATE!
+ 
+   This is the suggested template for new SIPs. After you have filled in the requisite fields, please delete these comments.
+ 

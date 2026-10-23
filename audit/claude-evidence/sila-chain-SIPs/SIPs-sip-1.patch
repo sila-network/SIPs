@@ -1,0 +1,36 @@
+--- a/SIPS/sip-1.md	2026-10-18 08:02:52.174851062 +0000
++++ b/SIPS/sip-1.md	2026-10-18 17:46:31.752115192 +0000
+@@ -409,7 +409,7 @@
+ Permitted Yellow Paper URLs must anchor to a specific commit, and so must match this regular expression:
+ 
+ ```regex
+-^(]{40}/paper\.pdf)$
++^(https://github\.com/sila-chain/yellowpaper/blob/[0-9a-f]{40}/paper\.pdf)$
+ ```
+ 
+ ### Digital Object Identifier System
+@@ -505,6 +505,24 @@
+ ^(https://github.com/sila-chain/execution-apis/(blob|commit)/[0-9a-f]{40}/.*|https://github.com/sila-chain/execution-apis/tree/[0-9a-f]{40}/.*)$
+ ```
+ 
++### Unicode Technical Standards (UTS)
++
++Links to Unicode Technical Standards may be included using normal markdown syntax, such as:
++
++```markdown
++[UTS #46](https://www.unicode.org/reports/tr46/tr46-35.html)
++```
++
++Which renders to:
++
++[UTS #46](https://www.unicode.org/reports/tr46/tr46-35.html)
++
++Permitted UTS URLs must anchor to a specific version, and so must match this regular expression:
++
++```regex
++^https://www\.unicode\.org/reports/tr[0-9]+/tr[0-9]+-[0-9]+\.html$
++```
++
+ ## Linking to other SIPs
+ 
+ References to other SIPs should follow the format `SIP-N` where `N` is the SIP number you are referring to.  Each SIP that is referenced in an SIP **MUST** be accompanied by a relative markdown link the first time it is referenced, and **MAY** be accompanied by a link on subsequent references.  The link **MUST** always be done via relative paths so that the links work in this GitHub repository, forks of this repository, the main SIPs site, mirrors of the main SIP site, etc.  For example, you would link to this SIP as `./sip-1.md`.
