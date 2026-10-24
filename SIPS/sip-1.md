@@ -185,7 +185,7 @@ A DOI reference identifies an actual publication and must resolve to an accessib
 
 ### Other Blockchain Specifications
 
-Do not insert a foreign blockchain identifier, operational name, client, network history, token standard, or fork identity. External cross-network references cannot authorize Sila functionality or bypass verification.
+Do not insert a foreign blockchain identifier, operational name, client, network event, token standard, or fork identity. External cross-network references cannot authorize Sila functionality or bypass verification.
 
 ## Linking to other SIPs
 
