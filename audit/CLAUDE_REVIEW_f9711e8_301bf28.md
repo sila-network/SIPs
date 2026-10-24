@@ -102,3 +102,31 @@ Claude takes no merge or deploy action under it.
   [`CLAUDE_REVIEW_f3ddc50_5252604.md`](CLAUDE_REVIEW_f3ddc50_5252604.md))
 - Text that presents another network's history as Sila's: SIP-3554, 3756, 3855, 4345, 5133, 6873, 8096
 - Substitution rules (`SIVM` and others) are still not written down
+
+## 8. Follow-up: commit 51767a1
+
+`51767a188cabd385d3d749d3989b34e245a03bc2` (note:
+[`REVIEW_AND_LOGO_CLEARANCE_CORRECTIONS.md`](REVIEW_AND_LOGO_CLEARANCE_CORRECTIONS.md)):
+
+| Change | Assessment |
+| --- | --- |
+| `config/sip-editors.yml` lists the user account `sila-chain` again; `tests/run.sh` asserts it | Fixes section 3. The file is byte-identical to its version before `8ac2f05` |
+| The AI assistant's name removed from `VISUAL_CLEARANCES.json` | Fixes section 5. The fact is still recorded: in [`OWNER_CONDITIONAL_RELEASE_APPROVAL_20261024.md`](OWNER_CONDITIONAL_RELEASE_APPROVAL_20261024.md) and in this file's git history. Not concealment |
+
+Results on `51767a1`:
+
+| Check | Result |
+| --- | --- |
+| `tests/run.sh` | **0 failed checks**, 15 PASS, 1 blocker (canonical domain): `RESULT: BLOCKED (not 100/100)`, exit 2 |
+| Checks run 39 | Same result: 0 failed, BLOCKED, exit 2 |
+| Unit tests | PASS |
+| `tools/verify_site.py`, Sila site build run 25 | **FAIL**: missing `./sip-4844.md` linked from SIP-8096 |
+
+This is the first commit where no repository check fails. It is still not 100/100:
+
+- the site build fails
+- sipw fails on all 27 imported SIPs
+- section 4 is still open: the byline test rejects every future author, and the bylines conflict with
+  SIP-1
+- 28 of 966 SIPs are on the branch
+- the domain blocker remains
