@@ -1,0 +1,15 @@
+---
+layout: default
+title: Sila SRC reference index
+---
+
+<h1>Sila SRC reference index</h1>
+
+These are Sila-local **reference records**, not published SRC specifications. Each entry preserves a numbering relationship while Sila's independent SRC corpus, its provenance, and its official publication location undergo verification. **No entry is evidence of adoption, approval, activation, or past network history.**
+
+<ul class="sip-index">
+{% assign refs = site.pages | where: "reference_kind", "src" | sort: "sip" %}
+{% for entry in refs %}
+  <li><a href="{{ entry.url | relative_url }}">SRC-{{ entry.sip }}</a> — Sila reference entry, unverified for publication</li>
+{% endfor %}
+</ul>
