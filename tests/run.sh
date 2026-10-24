@@ -97,7 +97,19 @@ pattern='\b(ethereum|eips?|ercs?|evm|eth|geth|go-ethereum|besu|erigon|nethermind
 hits="$(git ls-files | grep -vE '^(tests|audit)/|\.png$' | xargs grep -nPi "$pattern" || true)"
 [ -z "$hits" ] && pass "no foreign identity in text files" || { echo "$hits"; fail "foreign identity in text files"; }
 
-section "9. Open blockers outside this repository"
+section "9. Sila-only adaptation authors and owner-controlled brand"
+if python3 tools/verify_sila_publication_identity.py; then
+  pass "Sila issuer fields and approved logo bytes"
+else
+  fail "Sila issuer fields or approved logo bytes"
+fi
+if python3 -m unittest discover -s tests -p 'test_sila_publication_identity.py' -q; then
+  pass "Sila issuer and brand regression tests"
+else
+  fail "Sila issuer and brand regression tests"
+fi
+
+section "10. Open blockers outside this repository"
 if strings -n 5 assets/sila-logo.png | grep -iE 'openai|gpt-image' > /dev/null; then
   blocker "assets/sila-logo.png carries a C2PA manifest signed by a third-party image generator (needs owner decision)"
 fi
