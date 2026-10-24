@@ -3,7 +3,7 @@ sip: 1
 title: SIP Purpose and Guidelines
 status: Living
 type: Meta
-author: SILA Network (@sila-chain)
+author: Sila Network (@sila-network)
 created: 2026-10-22
 ---
 
