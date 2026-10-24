@@ -16,7 +16,7 @@ created: 2026-10-22
 
 ## SIP Rationale
 
-SIPs provide a single Sila-controlled mechanism to specify and validate changes to Sila clients, Sila networking, Sila interfaces, and Sila applications. The mechanism must not assume an implementation exists before its actual Sila version and test evidence have been checked.
+The Sila Improvement Process uses SIPs as the single Sila-controlled mechanism to specify and validate changes to Sila clients, Sila networking, Sila interfaces, and Sila applications. The mechanism must not assume an implementation exists before its actual Sila version and test evidence have been checked.
 
 A SIP is never proof of activation. Any proposed change to Sila network behavior requires a separate, genuine Sila governance and implementation decision.
 
@@ -32,7 +32,7 @@ There are three proposal types:
 - **Meta** describes binding Sila governance, review, and development procedures.
 - **Informational** conveys technical guidance without declaring a protocol change.
 
-Each SIP should address one independently reviewable change. A purely local implementation adjustment need not become a network standard.
+Each SIP should address one independently reviewable change. A purely local implementation adjustment in the Sila codebase need not become a network standard.
 
 ### Special requirements for Core SIPs
 
