@@ -42,8 +42,8 @@ fi
 
 section "3. Config and asset syntax"
 python3 -c "import tomllib; tomllib.load(open('config/sipw.toml', 'rb'))" && pass "config/sipw.toml parses" || fail "config/sipw.toml parses"
-python3 -c "import yaml; d = yaml.safe_load(open('config/sip-editors.yml')); assert all(v == ['sila-chain'] for v in d.values()), d" \
-  && pass "config/sip-editors.yml parses and lists @sila-chain" || fail "config/sip-editors.yml"
+python3 -c "import yaml; d = yaml.safe_load(open('config/sip-editors.yml')); assert all(v == ['sila-network'] for v in d.values()), d" \
+  && pass "config/sip-editors.yml parses and lists @sila-network" || fail "config/sip-editors.yml"
 python3 -c "import xml.dom.minidom as m; m.parse('assets/sip-1/sip-process.svg')" && pass "assets/sip-1/sip-process.svg is well-formed" || fail "sip-process.svg"
 
 section "4. sipw: a proposal built from the template passes"
