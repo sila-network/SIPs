@@ -120,7 +120,14 @@ fi
 if [ ! -f _config.yml ]; then
   blocker "no site build in this repository: the status page cannot be built or checked from here"
 fi
-echo "INFO     SIP documents in this repository: $(ls SIPS | grep -cE '^sip-[0-9]+\.md$')"
+proposal_count="$(find SIPS -maxdepth 1 -type f -name 'sip-*.md' | wc -l | tr -d '[:space:]')"
+echo "INFO     SIP documents in this repository: $proposal_count"
+if [ "$proposal_count" -ne 966 ]; then
+  blocker "full SIP corpus not installed and validated ($proposal_count of 966 candidate proposals)"
+fi
+if [ -f audit/held/sip-8096.md.hold ]; then
+  blocker "SIP-8096 on explicit dependency/identity hold pending SIP-4844"
+fi
 
 echo
 echo "failed checks: $failed, open blockers: $blockers"
