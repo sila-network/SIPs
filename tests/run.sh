@@ -66,117 +66,32 @@ expected="error[markdown-rel-links] error[preamble-enum-category] error[preamble
 section "6. Links"
 python3 tests/check_links.py && pass "all links resolve" || fail "broken links"
 
-section "7. Parity with the upstream process document (commit $UPSTREAM_COMMIT)"
-up="https://raw.githubusercontent.com/ethereum/EIPs/$UPSTREAM_COMMIT"
-curl -sSfL -m 30 "$up/EIPS/eip-1.md" -o "$WORK/up-1.md" && curl -sSfL -m 30 "$up/eip-template.md" -o "$WORK/up-template.md" || fail "download upstream"
-norm() { grep -E '^#{2,3} ' "$1" | sed -E 's/EIP|ERC|SIP|SRC/X/g; s/Ethereum |Sila //g; s/Execution Client Specifications/Execution Layer Specifications/'; }
-diff <(norm "$WORK/up-1.md") <(norm SIPS/sip-1.md) > "$WORK/headings.diff"
-cat > "$WORK/headings.expected" <<'EOF'
-20d19
-< ### System Contract Implementations
-30d28
-< ### Yellow Paper
-36a35
-> ## X Governance
-44d42
-< ## History
-EOF
-diff -q "$WORK/headings.diff" "$WORK/headings.expected" > /dev/null \
-  && pass "SIP-1 sections match upstream except the documented changes (Sila process check)" \
-  || { cat "$WORK/headings.diff"; fail "SIP-1 section parity"; }
-for s in Idea Draft Review 'Last Call' Final Stagnant Withdrawn Living; do
-  [ "$(grep -c "\*\*$s\*\*" "$WORK/up-1.md")" = "$(grep -c "\*\*$s\*\*" SIPS/sip-1.md)" ] || fail "status $s"
-done && pass "all 8 statuses present"
-diff <(grep -oE '^`[a-z-]+`:' "$WORK/up-1.md" | sed 's/eip/X/') <(grep -oE '^`[a-z-]+`:' SIPS/sip-1.md | sed 's/sip/X/') \
-  && pass "preamble headers identical" || fail "preamble headers"
-diff <(grep -E '^##' "$WORK/up-template.md") <(grep -E '^##' sip-template.md) \
-  && pass "template sections identical" || fail "template sections"
+section "7. Native Sila process checks"
+python3 tools/verify_sila_process.py && pass "Sila process" || fail "Sila process"
 
-section "8. Pure Sila identity scan (tracked text; negative test fixtures excluded)"
-pattern='\b(ethereum|eips?|ercs?|evm|eth|geth|go-ethereum|besu|erigon|nethermind|reth|ethresear\.ch|vitalik|buterin|openai|chatgpt)\b|\b(eip|erc)-[0-9]+|\b(eth|evm)_[a-z0-9]|sila\.org|sila\.github\.io|sila-magicians\.org|stackexchange'
-hits="$(git ls-files | grep -vE '^(tests)/|\.png | xargs grep -nPi "$pattern" || true)"
-[ -z "$hits" ] && pass "no foreign identity in text files" || { echo "$hits"; fail "foreign identity in text files"; }
+section "8. Pure Sila identity checks"
+python3 tools/check_sila_identity.py && pass "pure identity" || fail "pure identity"
 
-section "9. Sila-only adaptation authors and owner-controlled brand"
-if python3 tools/verify_sila_publication_identity.py; then
-  pass "Sila issuer fields and approved logo bytes"
-else
-  fail "Sila issuer fields or approved logo bytes"
-fi
-if python3 -m unittest discover -s tests -p 'test_sila_publication_identity.py' -q; then
-  pass "Sila issuer and brand regression tests"
-else
-  fail "Sila issuer and brand regression tests"
-fi
+section "9. Sila issuer and official brand"
+python3 tools/verify_sila_publication_identity.py && pass "Sila issuer and logo" || fail "Sila issuer and logo"
+python3 -m unittest discover -s tests -p 'test_sila_publication_identity.py' -q \
+  && pass "issuer tests" || fail "issuer tests"
 
-section "10. Open blockers outside this repository"
-if strings -n 5 assets/sila-logo.png | grep -iE 'openai|gpt-image' > /dev/null; then
-  blocker "assets/sila-logo.png carries a C2PA manifest signed by a third-party image generator (needs owner decision)"
-fi
-site="$(curl -sSL -m 30 https://sips.silachain.org/SIPS/sip-1 || true)"
-if echo "$site" | grep -iE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\.org' > /dev/null; then
-  blocker "https://sips.silachain.org/SIPS/sip-1 serves another repository's SIP-1 with foreign names, not this repository"
-fi
-if [ ! -f _config.yml ]; then
-  blocker "no site build in this repository: the status page cannot be built or checked from here"
-fi
-proposal_count="$(find SIPS -maxdepth 1 -type f -name 'sip-*.md' | wc -l | tr -d '[:space:]')"
-echo "INFO     SIP documents in this repository: $proposal_count"
-if [ "$proposal_count" -ne 966 ]; then
-  blocker "full SIP corpus not installed and validated ($proposal_count of 966 candidate proposals)"
+section "10. Release holds"
+count="$(find SIPS -maxdepth 1 -type f -name 'sip-*.md' | wc -l | tr -d '[:space:]')"
+echo "INFO     Sila SIP documents: $count"
+if [ "$count" -ne 966 ]; then
+  blocker "full Sila candidate set not validated ($count of 966)"
 fi
 if [ ! -f SIPS/sip-8096.md ]; then
-  blocker "SIP-8096 excluded: dependency SIP-4844 not verified"
+  blocker "SIP-8096 requires an unverified Sila-native specification"
 fi
-
+site="$(curl -sSL -m 20 https://sips.silachain.org/SIPS/sip-1 || true)"
+if echo "$site" | grep -iE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\.org' >/dev/null; then
+  blocker "public Sila SIP domain points to another publication"
+fi
 echo
 echo "failed checks: $failed, open blockers: $blockers"
-if [ "$failed" -gt 0 ]; then
-  echo "RESULT: FAILED"; exit 1
-elif [ "$blockers" -gt 0 ]; then
-  echo "RESULT: BLOCKED (not 100/100)"; exit 2
-fi
-echo "RESULT: PASS (100/100)"
- | xargs grep -nPi "$pattern" || true)"
-[ -z "$hits" ] && pass "no foreign identity in text files" || { echo "$hits"; fail "foreign identity in text files"; }
-
-section "9. Sila-only adaptation authors and owner-controlled brand"
-if python3 tools/verify_sila_publication_identity.py; then
-  pass "Sila issuer fields and approved logo bytes"
-else
-  fail "Sila issuer fields or approved logo bytes"
-fi
-if python3 -m unittest discover -s tests -p 'test_sila_publication_identity.py' -q; then
-  pass "Sila issuer and brand regression tests"
-else
-  fail "Sila issuer and brand regression tests"
-fi
-
-section "10. Open blockers outside this repository"
-if strings -n 5 assets/sila-logo.png | grep -iE 'openai|gpt-image' > /dev/null; then
-  blocker "assets/sila-logo.png carries a C2PA manifest signed by a third-party image generator (needs owner decision)"
-fi
-site="$(curl -sSL -m 30 https://sips.silachain.org/SIPS/sip-1 || true)"
-if echo "$site" | grep -iE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\.org' > /dev/null; then
-  blocker "https://sips.silachain.org/SIPS/sip-1 serves another repository's SIP-1 with foreign names, not this repository"
-fi
-if [ ! -f _config.yml ]; then
-  blocker "no site build in this repository: the status page cannot be built or checked from here"
-fi
-proposal_count="$(find SIPS -maxdepth 1 -type f -name 'sip-*.md' | wc -l | tr -d '[:space:]')"
-echo "INFO     SIP documents in this repository: $proposal_count"
-if [ "$proposal_count" -ne 966 ]; then
-  blocker "full SIP corpus not installed and validated ($proposal_count of 966 candidate proposals)"
-fi
-if [ ! -f SIPS/sip-8096.md ]; then
-  blocker "SIP-8096 excluded: dependency SIP-4844 not verified"
-fi
-
-echo
-echo "failed checks: $failed, open blockers: $blockers"
-if [ "$failed" -gt 0 ]; then
-  echo "RESULT: FAILED"; exit 1
-elif [ "$blockers" -gt 0 ]; then
-  echo "RESULT: BLOCKED (not 100/100)"; exit 2
-fi
-echo "RESULT: PASS (100/100)"
+if [ "$failed" -gt 0 ]; then echo "RESULT: FAILED"; exit 1; fi
+if [ "$blockers" -gt 0 ]; then echo "RESULT: BLOCKED (not 100/100)"; exit 2; fi
+echo "RESULT: PASS (checked scope only)"

@@ -1,6 +1,7 @@
 ---
 sip: 1
 title: SIP Purpose and Guidelines
+description: Defines Sila proposal governance and technical specification rules
 status: Living
 type: Meta
 author: Sila Network (@sila-network)
@@ -9,87 +10,65 @@ created: 2026-10-22
 
 ## What is an SIP?
 
-SIP stands for Sila Improvement Proposal. An SIP is a design document providing information to the Sila community, or describing a new feature for Sila or its processes or environment. The SIP should provide a concise technical specification of the feature and a rationale for the feature. The SIP author is responsible for building consensus within the community and documenting dissenting opinions.
+**SIP** means **Sila Improvement Proposal**. A SIP states a Sila-native feature, governance procedure, protocol change, or interoperability rule in a form that can be reviewed, implemented, and tested independently. SIPs belong to Sila Network and must not assert compatibility aliases, identities, forks, networks, or releases from another protocol.
+
+**Sila Network (@sila-network)** is the exclusive issuing authority for Sila SIP documents. Public contributions may be reviewed by authorized Sila editors, but the issuer field remains Sila Network. Proposal publication is distinct from Sila implementation, approval, or activation.
 
 ## SIP Rationale
 
-We intend SIPs to be the primary mechanisms for proposing new features, for collecting community technical input on an issue, and for documenting the design decisions that have gone into Sila. Because the SIPs are maintained as text files in a versioned repository, their revision history is the historical record of the feature proposal.
+SIPs provide a single Sila-controlled mechanism to specify and validate changes to Sila clients, Sila networking, Sila interfaces, and Sila applications. The mechanism must not assume an implementation exists before its actual Sila version and test evidence have been checked.
 
-For Sila implementers, SIPs are a convenient way to track the progress of their implementation. Ideally, each implementation maintainer would list the SIPs that they have implemented. This will give end users a convenient way to know the current status of a given implementation or library.
+A SIP is never proof of activation. Any proposed change to Sila network behavior requires a separate, genuine Sila governance and implementation decision.
 
 ## SIP Types
 
-There are three types of SIP:
+There are three proposal types:
 
-- A **Standards Track SIP** describes any change that affects most or all Sila implementations, such as: a change to the network protocol, a change in block or transaction validity rules, proposed application standards/conventions, or any change or addition that affects the interoperability of applications using Sila. Standards Track SIPs consist of three parts—a design document, an implementation, and (if warranted) an update to the [execution](https://github.com/sila-chain/execution-specs) or [consensus](https://github.com/sila-chain/consensus-specs) specifications. Furthermore, Standards Track SIPs can be broken down into the following categories:
-  - **Core**: improvements requiring a consensus fork, as well as changes that are not necessarily consensus critical but affect how Sila clients operate.
-  - **Networking**: includes improvements around [devp2p](https://github.com/sila-chain/sila-devp2p) and the [Sila Wire Protocol](https://github.com/sila-chain/sila-devp2p/blob/77462627ef97fc86812e86ca4b984003ac82edb5/caps/sil.md), as well as proposed improvements to the [Portal Network](https://github.com/sila-chain/sila-portal-network-specs) specifications.
-  - **Interface**: includes improvements around language-level standards like method names and contract ABIs.
-  - **SRC**: application-level standards and conventions, including contract standards such as token standards, name registries, URI schemes, library/package formats, and wallet formats. SRCs are maintained in the [SRCs repository](https://github.com/sila-chain/SRCs).
+- **Standards Track** specifies interoperable behavior and must be accompanied by sufficient implementation and conformance evidence. Its categories are:
+  - **Core**: Sila execution, state transition, consensus, upgrades, and rules affecting multiple clients.
+  - **Networking**: Sila peer-to-peer and wire-protocol interoperability.
+  - **Interface**: Sila APIs, contract interfaces, and application interoperability.
+  - **SRC**: Sila-native application, token, wallet, and contract standards. A cross-reference or routing page is not an approved SRC specification.
+- **Meta** describes binding Sila governance, review, and development procedures.
+- **Informational** conveys technical guidance without declaring a protocol change.
 
-- A **Meta SIP** describes a process surrounding Sila or proposes a change to (or an event in) a process. Process SIPs are like Standards Track SIPs but apply to areas other than the Sila protocol itself. They may propose an implementation, but not to Sila's codebase; they often require community consensus; unlike Informational SIPs, they are more than recommendations, and users are typically not free to ignore them. Examples include procedures, guidelines, changes to the decision-making process, and changes to the tools or environment used in Sila development. Any meta-SIP is also considered a Process SIP.
-
-- An **Informational SIP** describes a Sila design issue, or provides general guidelines or information to the Sila community, but does not propose a new feature. Informational SIPs do not necessarily represent Sila community consensus or a recommendation, so users and implementers are free to ignore Informational SIPs or follow their advice.
-
-It is highly recommended that a single SIP contain a single key proposal or new idea. The more focused the SIP, the more successful it tends to be. A change to one client doesn't require an SIP; a change that affects multiple clients, or defines a standard for multiple apps to use, does.
-
-An SIP must meet certain minimum criteria. It must be a clear and complete description of the proposed enhancement. The enhancement must represent a net improvement. The proposed implementation, if applicable, must be solid and must not complicate the protocol unduly.
+Each SIP should address one independently reviewable change. A purely local implementation adjustment need not become a network standard.
 
 ### Special requirements for Core SIPs
 
-If a **Core** SIP mentions or proposes changes to the SIVM (Sila Virtual Machine), it should refer to the instructions by their mnemonics and define the opcodes of those mnemonics at least once. A preferred way is the following:
-
-```
-REVERT (0xfd)
-```
+A SIP modifying the **Sila Virtual Machine (SVM)** must identify verified Sila instructions, numeric opcodes, stack behavior, gas behavior, error cases, and conformance tests. The name `SVM` denotes the intended Sila-native identity only; it does not establish that an unrelated tool, runtime, or interface is interchangeable. Actual instruction and runtime names require verification from a Sila-controlled implementation.
 
 ## SIP Work Flow
 
 ### Shepherding an SIP
 
-Parties involved in the process are you, the champion or *SIP author*, the [*SIP editors*](#sip-editors), and the Sila community on [Sila Magicians](https://sila-magicians.discourse.group/c/sips/5).
-
-Before you begin writing a formal SIP, you should vet your idea. Ask the Sila community first if an idea is original to avoid wasting time on something that will be rejected based on prior research. It is thus recommended to open a discussion thread in [the SIPs category of the Sila Magicians forum](https://sila-magicians.discourse.group/c/sips/5) to do this.
-
-Once the idea has been vetted, your next responsibility will be to present (by means of an SIP) the idea to the reviewers and all interested parties, invite editors, developers, and the community to give feedback on the aforementioned channels. You should try and gauge whether the interest in your SIP is commensurate with both the work involved in implementing it and how many parties will have to conform to it. For example, the work required for implementing a Core SIP will be much greater than for an SRC. Negative community feedback will be taken into consideration and may prevent your SIP from moving past the Draft stage.
+Contributors present technical ideas to the Sila community through [Sila Magicians](https://sila-magicians.discourse.group/) and can submit proposals to [Sila SIPs](https://github.com/sila-network/SIPs/pulls). Authorized Sila editors verify structure, security considerations, Sila-only identity, normative dependencies, and technical feasibility. The sole document issuer remains Sila Network.
 
 ### Core SIPs
 
-For Core SIPs, given that they require client implementations to be considered **Final** (see "SIP Process" below), you will need to either provide an implementation for the Sila clients or convince client maintainers to implement your SIP.
-
-SILA Network, as the project steward (see [SIP Governance](#sip-governance)), decides which Core SIPs are included in a network upgrade, based on technical soundness, the readiness of client implementations, and the discussion on [Sila Magicians](https://sila-magicians.discourse.group/c/sips/5). An SIP that is contentious enough to risk a network split should not be included in a network upgrade.
-
-If you are shepherding an SIP, you can make the process of building community consensus easier by making sure that [the Sila Magicians forum](https://sila-magicians.discourse.group/c/sips/5) thread for your SIP includes or links to as much of the community discussion as possible and that various stakeholders are well-represented.
-
-*In short, your role as the champion is to write the SIP using the style and format described below, shepherd the discussions in the appropriate forums, and build community consensus around the idea.*
+A Core SIP requires executable Sila-native test vectors, verified implementation compatibility, explicit security review, and a genuine Sila network activation decision where applicable. A similarly named feature elsewhere does not establish Sila implementation or adoption.
 
 ### SIP Process
 
-The following is the standardization process for all SIPs in all tracks:
-
 ![SIP Status Diagram](../assets/sip-1/sip-process.svg)
 
-**Idea** - An idea that is pre-draft. This is not tracked within the SIP Repository.
+**Idea** - An unnumbered, unratified concept.
 
-**Draft** - The first formally tracked stage of an SIP in development. An SIP is merged by an SIP Editor into the SIP repository when properly formatted.
+**Draft** - An assigned candidate proposal; it is not active.
 
-**Review** - An SIP Author marks an SIP as ready for and requesting Peer Review.
+**Review** - A candidate under technical and governance review.
 
-**Last Call** - This is the final review window for an SIP before it is moved to `Final`. An SIP enters `Last Call` when the specification is stable and the author opens a PR with a review end date (`last-call-deadline`), typically 14 days later.
+**Last Call** - A proposal entering a verifiable, time-limited final review. Actual dates must be provided; an invented deadline is prohibited.
 
-If this period results in necessary normative changes it will revert the SIP to `Review`.
+**Final** - A Sila governance-approved specification. Final status alone does not establish deployment or activation.
 
-**Final** - This SIP represents the final standard. A Final SIP exists in a state of finality and should only be updated to correct errata and add non-normative clarifications.
+**Stagnant** - A proposal paused for lack of progress.
 
-A PR moving an SIP from Last Call to Final SHOULD contain no changes other than the status update. Any content or editorial proposed change SHOULD be separate from this status-updating PR and committed prior to it.
+**Withdrawn** - A proposal withdrawn from consideration; its number is not reassigned.
 
-**Stagnant** - Any SIP in `Draft` or `Review` or `Last Call` if inactive for a period of 6 months or greater is moved to `Stagnant` by an SIP Editor. An SIP may be resurrected from this state by Authors or SIP Editors through moving it back to `Draft` or its earlier status. If not resurrected, a proposal may stay forever in this status.
+**Living** - A continually maintained process document, including SIP-1.
 
->*SIP Editors notify SIP Authors of any change to the status of their SIP that the authors did not make*
-
-**Withdrawn** - The SIP Author(s) have withdrawn the proposed SIP. This state has finality and can no longer be resurrected using this SIP number. If the idea is pursued at a later date, it is considered a new proposal.
-
-**Living** - A special status for SIPs that are designed to be continually updated and not reach a state of finality. This includes most notably SIP-1.
+Normative corrections during Last Call require renewed review. Material changes to Final specifications must be made through a distinct SIP. Editors cannot assign a false status, imply a nonexistent network upgrade, or approve an unresolved dependency.
 
 ## What belongs in a successful SIP?
 
@@ -112,428 +91,139 @@ SIPs should be written in [markdown](https://github.com/adam-p/markdown-here/wik
 
 ## SIP Header Preamble
 
-Each SIP must begin with an [RFC 822](https://www.rfc-editor.org/rfc/rfc822) style header preamble, preceded and followed by three hyphens (`---`). This header is also termed ["front matter" by Jekyll](https://jekyllrb.com/docs/front-matter/). The headers must appear in the following order.
+Every SIP uses a YAML front matter block delimited by three hyphens. The normative fields appear in this order:
 
-`sip`: *SIP number*
+`sip`: *A real Sila SIP number assigned by an authorized editor.*
 
-`title`: *The SIP title is a few words, not a complete sentence*
+`title`: *The short Sila-native title.*
 
-`description`: *Description is one full (short) sentence*
+`description`: *A concise statement of the proposed Sila behavior.*
 
-`author`: *The list of the author's or authors' name(s) and/or username(s), or name(s) and email(s). Details are below.*
+`author`: *Always `Sila Network (@sila-network)` as sole issuer.*
 
-`discussions-to`: *The url pointing to the official discussion thread*
+`discussions-to`: *An actual Sila Magicians discussion topic when one exists.*
 
-`status`: *Draft, Review, Last Call, Final, Stagnant, Withdrawn, Living*
+`status`: *Draft, Review, Last Call, Final, Stagnant, Withdrawn, or Living.*
 
-`last-call-deadline`: *The date last call period ends on* (Optional field, only needed when status is `Last Call`)
+`last-call-deadline`: *The real deadline, for Last Call proposals only.*
 
-`type`: *One of `Standards Track`, `Meta`, or `Informational`*
+`type`: *Standards Track, Meta, or Informational.*
 
-`category`: *One of `Core`, `Networking`, `Interface`, or `SRC`* (Optional field, only needed for `Standards Track` SIPs)
+`category`: *Core, Networking, Interface, or SRC for Standards Track.*
 
-`created`: *Date the SIP was created on*
+`created`: *The true date the Sila proposal number was assigned.*
 
-`requires`: *SIP number(s)* (Optional field)
+`requires`: *Real Sila SIP dependencies, when required.*
 
-`withdrawal-reason`: *A sentence explaining why the SIP was withdrawn.* (Optional field, only needed when status is `Withdrawn`)
+`withdrawal-reason`: *Required for Withdrawn proposals only.*
 
-Headers that permit lists must separate elements with commas.
-
-Headers requiring dates will always do so in the format of ISO 8601 (yyyy-mm-dd).
+Date values use ISO 8601 (`yyyy-mm-dd`). No fictitious topic, date, authorship, client release, activation, or dependency may be entered to satisfy a linter. A candidate missing mandatory verified evidence is blocked from ratification.
 
 ### `author` header
 
-The `author` header lists the names, email addresses or usernames of the authors/owners of the SIP. Those who prefer anonymity may use a username only, or a first name and a username. The format of the `author` header value must be:
-
-> Random J. User &lt;address@dom.ain&gt;
-
-or
-
-> Random J. User (@username)
-
-or
-
-> Random J. User (@username) &lt;address@dom.ain&gt;
-
-if the email address and/or GitHub username is included, and
-
-> Random J. User
-
-if neither the email address nor the GitHub username are given.
-
-At least one author must use a GitHub username, in order to get notified on change requests and have the capability to approve or reject them.
+`Sila Network (@sila-network)` is the sole issuer. A reviewer's GitHub account is not a second publisher or an alternative protocol identity.
 
 ### `discussions-to` header
 
-While an SIP is a draft, a `discussions-to` header will indicate the URL where the SIP is being discussed.
-
-The preferred discussion URL is a topic in [the SIPs category of Sila Magicians](https://sila-magicians.discourse.group/c/sips/5). The URL cannot point to GitHub pull requests, any URL which is ephemeral, and any URL which can get locked over time (i.e. Reddit topics).
+Use the real, existing discussion-topic URL at [Sila Magicians](https://sila-magicians.discourse.group/). A generic forum home page or pull request must not be invented as a completed proposal discussion.
 
 ### `type` header
 
-The `type` header specifies the type of SIP: Standards Track, Meta, or Informational. If the track is Standards please include the subcategory (core, networking, interface, or SRC).
+Select the normative proposal type according to whether it changes technical rules, governance, or only offers guidance.
 
 ### `category` header
 
-The `category` header specifies the SIP's category. This is required for standards-track SIPs only.
+Every Standards Track document must declare its correct Sila category. A routing document is not a deployed standard.
 
 ### `created` header
 
-The `created` header records the date that the SIP was assigned a number. Both headers should be in yyyy-mm-dd format, e.g. 2001-08-14.
+Use an actual Sila issuance date; do not substitute dates from unrelated source material.
 
 ### `requires` header
 
-SIPs may have a `requires` header, indicating the SIP numbers that this SIP depends on. If such a dependency exists, this field is required.
-
-A `requires` dependency is created when the current SIP cannot be understood or implemented without a concept or technical element from another SIP. Merely mentioning another SIP does not necessarily create such a dependency.
+A normative dependency must resolve to an existing Sila-owned authoritative specification. If the dependency is absent or unverified, mark the document blocked; do not create a fake placeholder, alias, or compatibility interface.
 
 ## Linking to External Resources
 
-Other than the specific exceptions listed below, links to external resources **SHOULD NOT** be included. External resources may disappear, move, or change unexpectedly.
+Sila normative references must resolve to genuine **Sila-controlled** code, specifications, or decisions. A cross-network implementation is not Sila evidence. Pin normative code citations to verified immutable revisions, not mutable branches. Where a required Sila counterpart is not verified, the issue is a **BLOCKER**, not a reason to invent a repository or alias.
 
-Changes to the list of permitted external resources are made through a Meta SIP.
+### Sila Execution Specifications
 
-### Execution Layer Specifications
+Cite Sila-controlled execution rules, verified revision identifiers, and Sila conformance tests. No specific repository location is claimed without verification.
 
-Links to the Sila Execution Layer Specifications may be included using normal markdown syntax, such as:
+### Sila System Contract Implementations
 
-```markdown
-[Sila Execution Layer Specifications](https://github.com/sila-chain/execution-specs/blob/313dbf0f689a695a149ff981f4fcad73ba46173c/README.md)
-```
+A system-contract reference requires a real Sila-owned implementation and passing Sila tests. Do not claim that a contract exists merely because an analogous component exists elsewhere.
 
-Which renders to:
+### Sila Consensus Specifications
 
-[Sila Execution Layer Specifications](https://github.com/sila-chain/execution-specs/blob/313dbf0f689a695a149ff981f4fcad73ba46173c/README.md)
+Cite actual Sila consensus rules, validators, state-transition tests, and supported upgrade definitions. A Sila activation must be supported by Sila-native evidence.
 
-Permitted Execution Layer Specifications URLs must anchor to a specific commit, and so must match this regular expression:
+### Sila Networking Specifications
 
-```regex
-^(https://github.com/sila-chain/execution-specs/(blob|commit)/[0-9a-f]{40}/.*|https://github.com/sila-chain/execution-specs/tree/[0-9a-f]{40}/.*)$
-```
+Sila peer and wire-protocol references must use Sila-native names, message schemas, and versions verified against Sila components.
 
-The Sila Execution Layer Specifications repository also contains the execution specification tests, under its `tests/` directory. Links to specific commits of those test files are permitted under the same rule.
+### Sila Portal Specifications
 
-### Consensus Layer Specifications
+A Sila Portal reference requires independently verified Sila ownership and an implemented Sila protocol. This heading does not declare such a component deployed.
 
-Links to specific commits of files within the Sila Consensus Layer Specifications may be included using normal markdown syntax, such as:
+### Sila Formal Protocol Specification
 
-```markdown
-[Beacon Chain](https://github.com/sila-chain/consensus-specs/blob/22d7e29ae882f4dba4f4afb5efde24b886131a7a/specs/phase0/beacon-chain.md)
-```
+Cite only a published and independently verifiable Sila formal specification when one exists. No document from another network can act as a substitute.
 
-Which renders to:
+### Sila Execution API Specification
 
-[Beacon Chain](https://github.com/sila-chain/consensus-specs/blob/22d7e29ae882f4dba4f4afb5efde24b886131a7a/specs/phase0/beacon-chain.md)
+Sila APIs must have Sila-owned method and namespace identities. A required external wire interface without a proven Sila counterpart is a blocker and does not authorize an alias.
 
-Permitted Consensus Layer Specifications URLs must anchor to a specific commit, and so must match this regular expression:
+### Independent International Standards
 
-```regex
-^https://github.com/sila-chain/consensus-specs/(blob|commit)/[0-9a-f]{40}/.*$
-```
+Independent specifications such as W3C, WHATWG, published IETF RFCs, Unicode UTS, and recognized public vulnerability catalog entries may be cited solely for neutral technical formats or safety requirements. These references do not become Sila protocol authorities. Use an immutable or specifically identified revision.
 
-### Networking Specifications
+### Digital Object Identifiers
 
-Links to specific commits of files within the Sila Networking Specifications may be included using normal markdown syntax, such as:
+A DOI reference identifies an actual publication and must resolve to an accessible source. Documentation examples must not be misrepresented as Sila implementation evidence.
 
-```markdown
-[Sila Wire Protocol](https://github.com/sila-chain/sila-devp2p/blob/77462627ef97fc86812e86ca4b984003ac82edb5/caps/sil.md)
-```
+### Other Blockchain Specifications
 
-Which renders as:
-
-[Sila Wire Protocol](https://github.com/sila-chain/sila-devp2p/blob/77462627ef97fc86812e86ca4b984003ac82edb5/caps/sil.md)
-
-Permitted Networking Specifications URLs must anchor to a specific commit, and so must match this regular expression:
-
-```regex
-^https://github.com/sila-chain/sila-devp2p/(blob|commit)/[0-9a-f]{40}/.*$
-```
-
-### Portal Specifications
-
-Links to specific commits of files within the Sila Portal Network Specifications may be included using normal markdown syntax, such as:
-
-```markdown
-[Portal Wire Protocol](https://github.com/sila-chain/sila-portal-network-specs/blob/44c3bd57eb7d96e008ab6d67ff969327078e07d9/portal-wire-protocol.md)
-```
-
-Which renders as:
-
-[Portal Wire Protocol](https://github.com/sila-chain/sila-portal-network-specs/blob/44c3bd57eb7d96e008ab6d67ff969327078e07d9/portal-wire-protocol.md)
-
-Permitted Portal Specifications URLs must anchor to a specific commit, and so must match this regular expression:
-
-```regex
-^https://github.com/sila-chain/sila-portal-network-specs/(blob|commit)/[0-9a-f]{40}/.*$
-```
-
-### World Wide Web Consortium (W3C)
-
-Links to a W3C "Recommendation" status specification may be included using normal markdown syntax. For example, the following link would be allowed:
-
-```markdown
-[Secure Contexts](https://www.w3.org/TR/2021/CRD-secure-contexts-20210918/)
-```
-
-Which renders as:
-
-[Secure Contexts](https://www.w3.org/TR/2021/CRD-secure-contexts-20210918/)
-
-Permitted W3C recommendation URLs MUST anchor to a specification in the technical reports namespace with a date, and so MUST match this regular expression:
-
-```regex
-^https://www\.w3\.org/TR/[0-9][0-9][0-9][0-9]/.*$
-```
-
-### Web Hypertext Application Technology Working Group (WHATWG)
-
-Links to WHATWG specifications may be included using normal markdown syntax, such as:
-
-```markdown
-[HTML](https://html.spec.whatwg.org/commit-snapshots/578def68a9735a1e36610a6789245ddfc13d24e0/)
-```
-
-Which renders as:
-
-[HTML](https://html.spec.whatwg.org/commit-snapshots/578def68a9735a1e36610a6789245ddfc13d24e0/)
-
-Permitted WHATWG specification URLs must anchor to a specification defined in the `spec` subdomain (idea specifications are not allowed) and to a commit snapshot, and so must match this regular expression:
-
-```regex
-^https:\/\/[a-z]*\.spec\.whatwg\.org/commit-snapshots/[0-9a-f]{40}/$
-```
-
-Although not recommended by WHATWG, SIPs must anchor to a particular commit so that future readers can refer to the exact version of the living standard that existed at the time the SIP was finalized. This gives readers sufficient information to maintain compatibility, if they so choose, with the version referenced by the SIP and the current living standard.
-
-### Internet Engineering Task Force (IETF)
-
-Links to an IETF Request For Comment (RFC) specification may be included using normal markdown syntax, such as:
-
-```markdown
-[RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
-```
-
-Which renders as:
-
-[RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)
-
-Permitted IETF specification URLs MUST anchor to a specification with an assigned RFC number (meaning cannot reference internet drafts), and so MUST match this regular expression:
-
-```regex
-^https:\/\/www.rfc-editor.org\/rfc\/.*$
-```
-
-### Bitcoin Improvement Proposal
-
-Links to Bitcoin Improvement Proposals may be included using normal markdown syntax, such as:
-
-```markdown
-[BIP 38](https://github.com/bitcoin/bips/blob/3db736243cd01389a4dfd98738204df1856dc5b9/bip-0038.mediawiki)
-```
-
-Which renders to:
-
-[BIP 38](https://github.com/bitcoin/bips/blob/3db736243cd01389a4dfd98738204df1856dc5b9/bip-0038.mediawiki)
-
-Permitted Bitcoin Improvement Proposal URLs must anchor to a specific commit, and so must match this regular expression:
-
-```regex
-^(https://github.com/bitcoin/bips/blob/[0-9a-f]{40}/bip-[0-9]+\.mediawiki)$
-```
-
-### National Vulnerability Database (NVD)
-
-Links to the Common Vulnerabilities and Exposures (CVE) system as published by the National Institute of Standards and Technology (NIST) may be included, provided they are qualified by the date of the most recent change, using the following syntax:
-
-```markdown
-[CVE-2023-29638 (2023-10-17T10:14:15)](https://nvd.nist.gov/vuln/detail/CVE-2023-29638)
-```
-
-Which renders to:
-
-[CVE-2023-29638 (2023-10-17T10:14:15)](https://nvd.nist.gov/vuln/detail/CVE-2023-29638)
-
-### Chain Agnostic Improvement Proposals (CAIPs)
-
-Links to a Chain Agnostic Improvement Proposals (CAIPs) specification may be included using normal markdown syntax, such as:
-
-```markdown
-[CAIP 10](https://github.com/ChainAgnostic/CAIPs/blob/5dd3a2f541d399a82bb32590b52ca4340b09f08b/CAIPs/caip-10.md)
-```
-
-Which renders to:
-
-[CAIP 10](https://github.com/ChainAgnostic/CAIPs/blob/5dd3a2f541d399a82bb32590b52ca4340b09f08b/CAIPs/caip-10.md)
-
-Permitted Chain Agnostic URLs must anchor to a specific commit, and so must match this regular expression:
-
-```regex
-^(https://github.com/ChainAgnostic/CAIPs/blob/[0-9a-f]{40}/CAIPs/caip-[0-9]+\.md)$
-```
-
-### Digital Object Identifier System
-
-Links qualified with a Digital Object Identifier (DOI) may be included using the following syntax:
-
-````markdown
-This is a sentence with a footnote.[^1]
-
-[^1]:
-    ```csl-json
-    {
-      "type": "article",
-      "id": 1,
-      "author": [
-        {
-          "family": "User",
-          "given": "Random J."
-        }
-      ],
-      "DOI": "00.0000/a00000-000-0000-y",
-      "title": "An Interesting Article",
-      "original-date": {
-        "date-parts": [
-          [2022, 12, 31]
-        ]
-      },
-      "URL": "https://sly-hub.invalid/00.0000/a00000-000-0000-y",
-      "custom": {
-        "additional-urls": [
-          "https://example.com/an-interesting-article.pdf"
-        ]
-      }
-    }
-    ```
-````
-
-Which renders to:
-
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable code-block-style blanks-around-fences -->
-
-This is a sentence with a footnote.[^1]
-
-[^1]:
-    ```csl-json
-    {
-      "type": "article",
-      "id": 1,
-      "author": [
-        {
-          "family": "User",
-          "given": "Random J."
-        }
-      ],
-      "DOI": "00.0000/a00000-000-0000-y",
-      "title": "An Interesting Article",
-      "original-date": {
-        "date-parts": [
-          [2022, 12, 31]
-        ]
-      },
-      "URL": "https://sly-hub.invalid/00.0000/a00000-000-0000-y",
-      "custom": {
-        "additional-urls": [
-          "https://example.com/an-interesting-article.pdf"
-        ]
-      }
-    }
-    ```
-
-<!-- markdownlint-restore -->
-
-See the [Citation Style Language Schema](https://resource.citationstyles.org/schema/v1.0/input/json/csl-data.json) for the supported fields. In addition to passing validation against that schema, references must include a DOI and at least one URL.
-
-The top-level URL field must resolve to a copy of the referenced document which can be viewed at zero cost. Values under `additional-urls` must also resolve to a copy of the referenced document, but may charge a fee.
-
-### Execution API Specification
-
-Links to the Sila Execution API Specification may be included using normal markdown syntax, such as:
-
-```markdown
-[Sila Execution API Specification](https://github.com/sila-chain/execution-apis/blob/ed0288e624f8dabf72d0efbcf304847cb4f53a4b/README.md)
-```
-
-Which renders to:
-
-[Sila Execution API Specification](https://github.com/sila-chain/execution-apis/blob/ed0288e624f8dabf72d0efbcf304847cb4f53a4b/README.md)
-
-Permitted Execution API Specification URLs must anchor to a specific commit, and so must match this regular expression:
-
-```regex
-^(https://github.com/sila-chain/execution-apis/(blob|commit)/[0-9a-f]{40}/.*|https://github.com/sila-chain/execution-apis/tree/[0-9a-f]{40}/.*)$
-```
-
-### Unicode Technical Standards (UTS)
-
-Links to Unicode Technical Standards may be included using normal markdown syntax, such as:
-
-```markdown
-[UTS #46](https://www.unicode.org/reports/tr46/tr46-35.html)
-```
-
-Which renders to:
-
-[UTS #46](https://www.unicode.org/reports/tr46/tr46-35.html)
-
-Permitted UTS URLs must anchor to a specific version, and so must match this regular expression:
-
-```regex
-^https://www\.unicode\.org/reports/tr[0-9]+/tr[0-9]+-[0-9]+\.html$
-```
+Do not insert a foreign blockchain identifier, operational name, client, network history, token standard, or fork identity. External cross-network references cannot authorize Sila functionality or bypass verification.
 
 ## Linking to other SIPs
 
-References to other SIPs should follow the format `SIP-N` where `N` is the SIP number you are referring to.  Each SIP that is referenced in an SIP **MUST** be accompanied by a relative markdown link the first time it is referenced, and **MAY** be accompanied by a link on subsequent references.  The link **MUST** always be done via relative paths so that the links work in this GitHub repository, forks of this repository, the main SIPs site, mirrors of the main SIP site, etc.  For example, you would link to this SIP as `./sip-1.md`.
+A real Sila improvement proposal is referenced as `SIP-N`; a verified Sila application standard is referenced as `SRC-N`. Link to existing local Sila documents using relative paths, for example [SIP-1](./sip-1.md). A missing target or routing-only page cannot satisfy a normative dependency.
 
 ## Auxiliary Files
 
-Images, diagrams and auxiliary files should be included in a subdirectory of the `assets` folder for that SIP as follows: `assets/sip-N` (where **N** is to be replaced with the SIP number). When linking to an image in the SIP, use relative links such as `../assets/sip-1/image.png`. Prefer SVG diagrams, then PNG, and finally everything else.
+Sila diagrams, supporting tests, and images must use `assets/sip-N/` paths and Sila-controlled identities. References must resolve to existing files. Do not add source snapshots, migration archives, historical registers, or legacy identity catalogs.
 
-## Transferring SIP Ownership
+## SIP Stewardship
 
-It occasionally becomes necessary to transfer ownership of SIPs to a new champion. In general, we'd like to retain the original author as a co-author of the transferred SIP, but that's really up to the original author. A good reason to transfer ownership is because the original author no longer has the time or interest in updating it or following through with the SIP process, or has fallen off the face of the 'net (i.e. is unreachable or isn't responding to email). A bad reason to transfer ownership is because you don't agree with the direction of the SIP. We try to build consensus around an SIP, but if that's not possible, you can always submit a competing SIP.
-
-If you are interested in assuming ownership of an SIP, send a message asking to take over, addressed to both the original author and the SIP editor. If the original author doesn't respond to the email in a timely manner, the SIP editor will make a unilateral decision (it's not like such decisions can't be reversed :)).
+Sila Network owns the authority to issue and approve SIPs. Maintenance tasks may be reassigned to a currently authorized editor without introducing an alternative SIP issuer. Such reassignment cannot change the genuine technical readiness or approval status of a proposal.
 
 ## SIP Governance
 
-SILA Network (@sila-chain) is the steward of the SIP process. As steward, SILA Network:
+**Sila Network (@sila-network)** is the sole SIP publication authority. The authorized individual account `@sila-chain` is an editor listed in the current repository configuration, not a separate network or alternative issuer.
 
-- Maintains this repository and the SIP process described in this document;
-- Appoints and removes SIP editors, through a Meta SIP;
-- Decides which Core SIPs are included in a network upgrade.
+Sila Network establishes the governance process, appoints editors, and authorizes technical inclusion of verified Core proposals in Sila upgrades. No editor may claim an implementation, activation, or approval absent verified Sila evidence.
 
-Decisions are made in public: every change to an SIP is made through a pull request to this repository, and proposals are discussed in [the SIPs category of Sila Magicians](https://sila-magicians.discourse.group/c/sips/5) before they are merged. Being steward of the process does not make SILA Network the author of an SIP; authorship belongs to the people listed in each SIP's `author` header.
+The authorized [Sila SIP repository](https://github.com/sila-network/SIPs) contains proposed specifications, while [Sila Magicians](https://sila-magicians.discourse.group/) hosts technical discussion. Public review does not itself ratify a network change.
 
 ## SIP Editors
 
-The current SIP editors are
-
-- SILA Network (@sila-chain)
-
-The list of SIP editors is also kept in [`config/sip-editors.yml`](../config/sip-editors.yml). Changes to the list of SIP editors are made through a Meta SIP.
+The currently designated editor account is `@sila-chain`, as reflected in [`config/sip-editors.yml`](../config/sip-editors.yml). The document issuer remains `Sila Network (@sila-network)` irrespective of the editor handling a proposal.
 
 ## SIP Editor Responsibilities
 
-For each new SIP that comes in, an editor does the following:
+Editors must:
 
-- Read the SIP to check if it is ready: sound and complete. The ideas must make technical sense, even if they don't seem likely to get to final status.
-- The title should accurately describe the content.
-- Check the SIP for language (spelling, grammar, sentence structure, etc.), markup (GitHub flavored Markdown), code style
+- Confirm that the specification uses Sila-only operational identity and approved Sila authorities.
+- Review the proposal for clear normative semantics, technical soundness, a Sila-native title, and correct Markdown.
+- Verify genuine Sila implementation evidence, conformance tests, security requirements, and dependencies.
+- Refuse fictional Sila revisions, unsupported activation claims, foreign compatibility names, and missing normative targets.
+- Ensure that `Sila Network (@sila-network)` remains the sole issuer in every normative SIP document.
+- Require genuine approval before marking Final or releasing a new Sila network rule.
+- Merge approved changes only through the authorized [Sila SIP review process](https://github.com/sila-network/SIPs/pulls).
 
-If the SIP isn't ready, the editor will send it back to the author for revision, with specific instructions.
-
-Once the SIP is ready for the repository, the SIP editor will:
-
-- Assign an SIP number (generally incremental; editors can reassign if number sniping is suspected)
-- Merge the corresponding [pull request](https://github.com/sila-network/SIPs/pulls)
-- Send a message back to the SIP author with the next step.
-
-The SIP editors monitor SIP changes, and correct any structure, grammar, spelling, or markup mistakes we see.
-
-The editors don't pass judgment on SIPs. We merely do the administrative & editorial part.
+Editors cannot waive the Pure Sila identity policy or replace real tests with terminology changes.
 
 ## Style Guide
 
