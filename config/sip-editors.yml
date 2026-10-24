@@ -1,14 +1,14 @@
 governance:
-  - sila-network
+  - sila-chain
 core:
-  - sila-network
+  - sila-chain
 src:
-  - sila-network
+  - sila-chain
 networking:
-  - sila-network
+  - sila-chain
 interface:
-  - sila-network
+  - sila-chain
 meta:
-  - sila-network
+  - sila-chain
 informational:
-  - sila-network
+  - sila-chain
