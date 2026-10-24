@@ -52,3 +52,5 @@ sipw/target/release/sipw --config ./config/sipw.toml SIPS/sip-N.md
 ## License
 
 All SIPs are released into the public domain: copyright and related rights waived via [CC0](./LICENSE.md).
+
+**Brand notice:** The Sila logo shown above is supplied and identified by the Sila project owner as the official Sila mark. The logo is a reserved brand asset and is **not** covered by this repository's CC0 waiver for specification text. The recorded image source and checksum are in [the brand decision record](./audit/OWNER_BRAND_DECISIONS_20261024.md).

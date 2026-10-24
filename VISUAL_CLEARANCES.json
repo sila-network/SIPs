@@ -1,0 +1,9 @@
+{
+  "assets/sila-logo.png": {
+    "sha256": "26bf32c6fb7f76a8e6143dc1cd07c3839a6a7ff930d28498af7f5e5fd4e866da",
+    "identity_review": "cleared",
+    "license_basis": "Project owner declared Sila owns its official mark on 2026-10-24; Sila brand asset, reserved and excluded from CC0 text waiver",
+    "reviewed_by": "Sila project owner, direct declaration in ChatGPT conversation, 2026-10-24",
+    "evidence_reference": "audit/OWNER_BRAND_DECISIONS_20261024.md; original uploaded JPEG SHA-256 3df7d17364c57f5bd63ee839bd50caaa6f30acd1ac2febbe85b9d654dffb9137"
+  }
+}
