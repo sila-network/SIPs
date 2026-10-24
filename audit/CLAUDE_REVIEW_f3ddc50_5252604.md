@@ -71,3 +71,20 @@ legacy exemption. Any such exemption must be explicit, not hidden.
   - SIP-3855 and 6873: mainnet measurements
 - Substitution rules (`SIVM` and others) still not written down
 - All owner decisions in section 9 of the last review
+
+## 5. Follow-up: commit 4a8aa6a
+
+`4a8aa6afba874dd23766ff0ba778c6ca24d00395` changes one line: `eth_feeHistory` → `sil_feeHistory` in
+SIP-7840. Checked against go-sila, which calls `sil_feeHistory` in `silclient/ethclient.go:643` and
+`internal/web3ext/web3ext.go:590`. It also matches the `sila-chain/SIPs` generator output.
+
+Results on `4a8aa6a`:
+
+| Check | Result |
+| --- | --- |
+| identity scan | **FAIL**: only the two author lines remain (`SIPS/sip-198.md:4`, `SIPS/sip-7668.md:5`), which need the owner's decision |
+| other 12 checks in `tests/run.sh` | PASS |
+| Unit tests (32) | PASS |
+| `tools/verify_site.py` | **FAIL**: the missing `./sip-4844.md` link in SIP-8096 |
+| Sila site build run 13 | failure, same cause |
+| `tests/run.sh` | `RESULT: FAILED`, 1 failed check, 2 blockers |
