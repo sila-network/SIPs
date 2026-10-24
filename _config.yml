@@ -3,7 +3,6 @@ description: Draft and published specifications for the Sila network
 url: https://sips.silachain.org
 baseurl: ""
 markdown: kramdown
-highlighter: rouge
 encoding: utf-8
 
 # Publication is a separate owner-controlled operation. This build only tests
