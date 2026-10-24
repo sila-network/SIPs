@@ -26,6 +26,56 @@ class DocumentMarkup(HTMLParser):
             self.h1 = True
 
 
+class LinkMarkup(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links: list[str] = []
+        self.anchors: set[str] = set()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        data = dict(attrs)
+        for name in ("id", "name"):
+            if data.get(name):
+                self.anchors.add(data[name])
+        target = data.get("href") if tag in ("a", "link") else data.get("src") if tag in ("img", "script") else None
+        if target:
+            self.links.append(target)
+
+
+def internal_link_failures(destination: Path) -> list[str]:
+    """Report site-internal links whose page or anchor was not generated."""
+    pages = {page.resolve(): page.read_text(encoding="utf-8") for page in destination.rglob("*.html")}
+    parsed: dict[Path, LinkMarkup] = {}
+    for page, html in pages.items():
+        parser = LinkMarkup()
+        parser.feed(html)
+        parsed[page] = parser
+    failures: list[str] = []
+    for page, parser in sorted(parsed.items()):
+        for link in parser.links:
+            if re.match(r"^[a-z][a-z0-9+.-]*:", link, re.IGNORECASE) or link.startswith("//"):
+                continue  # external or non-HTTP scheme; checked elsewhere
+            path_part, _, fragment = link.partition("#")
+            path_part = path_part.split("?", 1)[0]
+            if not path_part:
+                target = page
+            elif path_part.startswith("/"):
+                target = destination.resolve() / path_part.lstrip("/")
+            else:
+                target = page.parent / path_part
+            candidates = [target, target.with_name(target.name + ".html"), target / "index.html"]
+            found = next((c.resolve() for c in candidates if c.is_file()), None)
+            where = page.relative_to(destination.resolve())
+            if found is None:
+                failures.append(f"broken internal link in {where}: {link}")
+                continue
+            if fragment and found.suffix == ".html":
+                anchors = parsed[found].anchors if found in parsed else LinkMarkup().anchors
+                if fragment not in anchors:
+                    failures.append(f"missing anchor in {where}: {link}")
+    return failures
+
+
 def verify(source: Path, destination: Path) -> list[str]:
     failures: list[str] = []
     homepage = destination / "index.html"
@@ -56,6 +106,8 @@ def verify(source: Path, destination: Path) -> list[str]:
             failures.append(f"proposal missing title or article markup: {original.name}")
         if f"SIP-{original.stem.removeprefix('sip-')}" not in page:
             failures.append(f"proposal number absent: {original.name}")
+
+    failures.extend(internal_link_failures(destination))
 
     # Do not mistake one-process-document success for complete-corpus readiness.
     print(f"Generated {len(proposals)} SIP pages; source scope: {source}")

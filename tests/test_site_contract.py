@@ -38,6 +38,35 @@ class SiteContractTests(unittest.TestCase):
         (self.destination / "index.html").unlink()
         self.assertTrue(any("homepage" in issue for issue in verify(self.source, self.destination)))
 
+    def test_broken_internal_link_fails(self) -> None:
+        (self.destination / "SIPS/sip-1.html").write_text(
+            '<article class="sip-document"><h1>SIP-1</h1><a href="../LICENSE.md">x</a></article>'
+        )
+        self.assertTrue(any("broken internal link" in issue for issue in verify(self.source, self.destination)))
+
+    def test_missing_anchor_fails(self) -> None:
+        (self.destination / "SIPS/sip-1.html").write_text(
+            '<article class="sip-document"><h1 id="top">SIP-1</h1><a href="#absent">x</a></article>'
+        )
+        self.assertTrue(any("missing anchor" in issue for issue in verify(self.source, self.destination)))
+
+    def test_valid_internal_links_pass(self) -> None:
+        (self.destination / "LICENSE.md").write_text("CC0")
+        (self.destination / "SIPS/sip-1.html").write_text(
+            '<article class="sip-document"><h1 id="top">SIP-1</h1>'
+            '<a href="../LICENSE.md">l</a><a href="#top">t</a><a href="/SIPS/sip-1.html#top">s</a>'
+            '<a href="https://sips.silachain.org/">e</a></article>'
+        )
+        self.assertEqual(verify(self.source, self.destination), [])
+
+    def test_anchors_resolve_through_a_symlinked_destination(self) -> None:
+        (self.destination / "SIPS/sip-1.html").write_text(
+            '<article class="sip-document"><h1 id="top">SIP-1</h1><a href="#top">t</a></article>'
+        )
+        linked = self.root / "linked-site"
+        linked.symlink_to(self.destination, target_is_directory=True)
+        self.assertEqual(verify(self.source, linked), [])
+
 
 if __name__ == "__main__":
     unittest.main()
