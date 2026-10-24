@@ -28,7 +28,6 @@ Please note that this repository is for documenting standards and not for help i
 | [`config/sip-editors.yml`](./config/sip-editors.yml) | SIP editors per category |
 | [`config/sipw.toml`](./config/sipw.toml) | `sipw` validation rules |
 | [`tests/`](./tests) | Repository checks, run with `tests/run.sh` |
-| [`audit/AUDIT.md`](./audit/AUDIT.md) | Audit report and open blockers |
 | [`LICENSE.md`](./LICENSE.md) | CC0 1.0 Universal |
 
 ## Preferred Citation Format
@@ -53,4 +52,4 @@ sipw/target/release/sipw --config ./config/sipw.toml SIPS/sip-N.md
 
 All SIPs are released into the public domain: copyright and related rights waived via [CC0](./LICENSE.md).
 
-**Brand notice:** The Sila logo shown above is supplied and identified by the Sila project owner as the official Sila mark. The logo is a reserved brand asset and is **not** covered by this repository's CC0 waiver for specification text. The recorded image source and checksum are in [the brand decision record](./audit/OWNER_BRAND_DECISIONS_20261024.md).
+**Brand notice:** The Sila logo shown above is supplied and identified by the Sila project owner as the official Sila mark. The logo is a reserved brand asset and is **not** covered by this repository's CC0 waiver for specification text. The Sila logo is reserved for Sila and is not released under the specification-text license.

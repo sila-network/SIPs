@@ -82,7 +82,7 @@ cat > "$WORK/headings.expected" <<'EOF'
 < ## History
 EOF
 diff -q "$WORK/headings.diff" "$WORK/headings.expected" > /dev/null \
-  && pass "SIP-1 sections match upstream except the documented changes (see audit/AUDIT.md)" \
+  && pass "SIP-1 sections match upstream except the documented changes (Sila process check)" \
   || { cat "$WORK/headings.diff"; fail "SIP-1 section parity"; }
 for s in Idea Draft Review 'Last Call' Final Stagnant Withdrawn Living; do
   [ "$(grep -c "\*\*$s\*\*" "$WORK/up-1.md")" = "$(grep -c "\*\*$s\*\*" SIPS/sip-1.md)" ] || fail "status $s"
@@ -92,9 +92,9 @@ diff <(grep -oE '^`[a-z-]+`:' "$WORK/up-1.md" | sed 's/eip/X/') <(grep -oE '^`[a
 diff <(grep -E '^##' "$WORK/up-template.md") <(grep -E '^##' sip-template.md) \
   && pass "template sections identical" || fail "template sections"
 
-section "8. Pure Sila identity scan (tracked text files, excluding tests/ and audit/, which name what they test for)"
+section "8. Pure Sila identity scan (tracked text; negative test fixtures excluded)"
 pattern='\b(ethereum|eips?|ercs?|evm|eth|geth|go-ethereum|besu|erigon|nethermind|reth|ethresear\.ch|vitalik|buterin|openai|chatgpt)\b|\b(eip|erc)-[0-9]+|\b(eth|evm)_[a-z0-9]|sila\.org|sila\.github\.io|sila-magicians\.org|stackexchange'
-hits="$(git ls-files | grep -vE '^(tests|audit)/|\.png$' | xargs grep -nPi "$pattern" || true)"
+hits="$(git ls-files | grep -vE '^(tests)/|\.png | xargs grep -nPi "$pattern" || true)"
 [ -z "$hits" ] && pass "no foreign identity in text files" || { echo "$hits"; fail "foreign identity in text files"; }
 
 section "9. Sila-only adaptation authors and owner-controlled brand"
@@ -125,8 +125,51 @@ echo "INFO     SIP documents in this repository: $proposal_count"
 if [ "$proposal_count" -ne 966 ]; then
   blocker "full SIP corpus not installed and validated ($proposal_count of 966 candidate proposals)"
 fi
-if [ -f audit/held/sip-8096.md.hold ]; then
-  blocker "SIP-8096 on explicit dependency/identity hold pending SIP-4844"
+if [ ! -f SIPS/sip-8096.md ]; then
+  blocker "SIP-8096 excluded: dependency SIP-4844 not verified"
+fi
+
+echo
+echo "failed checks: $failed, open blockers: $blockers"
+if [ "$failed" -gt 0 ]; then
+  echo "RESULT: FAILED"; exit 1
+elif [ "$blockers" -gt 0 ]; then
+  echo "RESULT: BLOCKED (not 100/100)"; exit 2
+fi
+echo "RESULT: PASS (100/100)"
+ | xargs grep -nPi "$pattern" || true)"
+[ -z "$hits" ] && pass "no foreign identity in text files" || { echo "$hits"; fail "foreign identity in text files"; }
+
+section "9. Sila-only adaptation authors and owner-controlled brand"
+if python3 tools/verify_sila_publication_identity.py; then
+  pass "Sila issuer fields and approved logo bytes"
+else
+  fail "Sila issuer fields or approved logo bytes"
+fi
+if python3 -m unittest discover -s tests -p 'test_sila_publication_identity.py' -q; then
+  pass "Sila issuer and brand regression tests"
+else
+  fail "Sila issuer and brand regression tests"
+fi
+
+section "10. Open blockers outside this repository"
+if strings -n 5 assets/sila-logo.png | grep -iE 'openai|gpt-image' > /dev/null; then
+  blocker "assets/sila-logo.png carries a C2PA manifest signed by a third-party image generator (needs owner decision)"
+fi
+site="$(curl -sSL -m 30 https://sips.silachain.org/SIPS/sip-1 || true)"
+if echo "$site" | grep -iE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\.org' > /dev/null; then
+  blocker "https://sips.silachain.org/SIPS/sip-1 serves another repository's SIP-1 with foreign names, not this repository"
+fi
+if [ ! -f _config.yml ]; then
+  blocker "no site build in this repository: the status page cannot be built or checked from here"
+fi
+proposal_count="$(find SIPS -maxdepth 1 -type f -name 'sip-*.md' | wc -l | tr -d '[:space:]')"
+echo "INFO     SIP documents in this repository: $proposal_count"
+if [ "$proposal_count" -ne 966 ]; then
+  blocker "full SIP corpus not installed and validated ($proposal_count of 966 candidate proposals)"
+fi
+if [ ! -f SIPS/sip-8096.md ]; then
+  blocker "SIP-8096 excluded: dependency SIP-4844 not verified"
 fi
 
 echo
