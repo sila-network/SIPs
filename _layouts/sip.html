@@ -1,0 +1,17 @@
+---
+layout: default
+---
+<article class="sip-document">
+  <header>
+    <p class="eyebrow">Sila Improvement Proposal</p>
+    <h1>SIP-{{ page.sip | escape }} — {{ page.title | default: 'Technical reference' | escape }}</h1>
+    {% if page.status %}
+    <p class="meta">Document status: <strong>{{ page.status | escape }}</strong></p>
+    {% else %}
+    <p class="meta"><strong>Unratified reference:</strong> no Sila governance status has been verified for this document.</p>
+    {% endif %}
+    {% if page.category %}<p class="meta">Category: {{ page.category | escape }}</p>{% endif %}
+    {% if page.reference_kind == 'src' %}<p class="meta">This is a cross-repository SRC reference, not a published SRC specification.</p>{% endif %}
+  </header>
+  {{ content }}
+</article>

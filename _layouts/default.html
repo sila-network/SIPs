@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% if page.title %}{{ page.title | escape }} · {% endif %}{{ site.title | escape }}</title>
+  <meta name="description" content="{{ site.description | escape }}">
+  <link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ '/' | relative_url }}">Sila Protocol Specifications</a>
+    <nav aria-label="Project navigation">
+      <a href="{{ '/SIPS/sip-1.html' | relative_url }}">SIP-1</a>
+      <a href="https://sila-magicians.discourse.group/">Discussion forum</a>
+      <a href="https://github.com/sila-network/SIPs">Source repository</a>
+    </nav>
+  </header>
+  <main id="main" class="content">{{ content }}</main>
+  <footer class="site-footer">A specification in this repository is not evidence of adoption or network activation.</footer>
+</body>
+</html>

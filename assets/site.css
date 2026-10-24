@@ -1,0 +1,14 @@
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.6}
+body{margin:0;background:Canvas;color:CanvasText}
+a{color:#1975a8}
+.site-header,.site-footer{padding:1rem max(1rem,calc((100% - 62rem)/2));border-bottom:1px solid #8885}
+.site-header{display:flex;flex-wrap:wrap;align-items:center;gap:1.5rem;justify-content:space-between}
+.site-header .brand{font-size:1.2rem;font-weight:750;text-decoration:none}
+.site-header nav{display:flex;gap:1rem;flex-wrap:wrap}
+.content{max-width:62rem;margin:2rem auto;padding:0 1rem;overflow-wrap:anywhere}
+.content img{max-width:100%;height:auto}
+.content pre{overflow-x:auto;padding:1rem;background:#8882}
+.content table{display:block;overflow-x:auto;border-collapse:collapse;max-width:100%}
+.content td,.content th{border:1px solid #8887;padding:.4rem .65rem}
+.eyebrow,.meta,.site-footer{font-size:.9rem;color:GrayText}
+.sip-index{line-height:2}

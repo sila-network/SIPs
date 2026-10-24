@@ -1,0 +1,28 @@
+name: Sila site build
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  site-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Build unpublished Sila site
+        run: bundle exec jekyll build --trace --destination _site
+      - name: Verify page coverage
+        run: python3 tools/verify_site.py _site
+      - name: Test site validator
+        run: python3 -m unittest discover -s tests -p 'test_site_contract.py' -v

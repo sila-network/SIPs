@@ -1,0 +1,14 @@
+---
+layout: default
+title: Specifications
+---
+<h1>Sila Protocol Specifications</h1>
+<p>The entries below are technical proposals and references. Listing here does not imply
+network activation, consensus or acceptance by the Sila maintainers.</p>
+{% assign specs = site.pages | where_exp: "doc", "doc.sip" | sort: "sip" %}
+<p><strong>{{ specs.size }} entries available in this build.</strong></p>
+<ul class="sip-index">
+{% for doc in specs %}
+  <li><a href="{{ doc.url | relative_url }}">SIP-{{ doc.sip | escape }}</a> — {{ doc.title | default: 'Reference' | escape }}{% if doc.status %} ({{ doc.status | escape }}){% else %} (unratified){% endif %}</li>
+{% endfor %}
+</ul>

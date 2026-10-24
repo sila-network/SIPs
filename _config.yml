@@ -1,0 +1,33 @@
+title: Sila Protocol Specifications
+description: Draft and published specifications for the Sila network
+url: https://sips.silachain.org
+baseurl: ""
+markdown: kramdown
+highlighter: rouge
+encoding: utf-8
+
+# Publication is a separate owner-controlled operation. This build only tests
+# the draft content on the authorized work branch.
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - LICENSE.md
+  - audit
+  - config
+  - tests
+  - tools
+  - vendor
+  - node_modules
+  - .github
+  - .gitignore
+  - .gitattributes
+  - sip-template.md
+  - _site
+
+defaults:
+  - scope:
+      path: "SIPS"
+      type: pages
+    values:
+      layout: sip
