@@ -30,7 +30,7 @@ def check(s: str) -> list[str]:
         return ["Missing YAML front matter"]
     front = dict(re.findall(r"^([a-z-]+):\s*(.*?)$", header.group(1), re.M))
     for k, v in (("sip", "1"), ("status", "Living"), ("type", "Meta"),
-                 ("author", "Sila Network (@sila-network)")):
+                 ("author", "Ahmed Ibrahim, Jihad Mustafa")):
         if front.get(k) != v:
             errors.append(f"Wrong {k}")
     for h in REQUIRED_SECTIONS:
