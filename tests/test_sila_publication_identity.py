@@ -49,6 +49,24 @@ class SilaOwnerIdentityTests(unittest.TestCase):
         p.write_text(p.read_text().replace(SILA_ISSUER, SILA_ISSUER + ", Other"))
         self.assertTrue(any("issuer" in s for s in self.issues()))
 
+    def test_sip1_two_authors_pass(self):
+        p = self.root / "SIPS/sip-1.md"
+        p.write_text(
+            "---\\nsip: 1\\nauthor: Ahmed Ibrahim, Jihad Mustafa\\n---\\n",
+            encoding="utf-8",
+        )
+        logo = (self.root / "assets/sila-logo.png").read_bytes()
+        with patch("tools.verify_sila_publication_identity.LOGO_SHA256", hashlib.sha256(logo).hexdigest()):
+            self.assertEqual(self.issues(), [])
+
+    def test_sip1_extra_author_is_rejected(self):
+        p = self.root / "SIPS/sip-1.md"
+        p.write_text(
+            "---\\nsip: 1\\nauthor: Ahmed Ibrahim, Jihad Mustafa, Other\\n---\\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("sip-1.md" in s for s in self.issues()))
+
     def test_tampered_logo_is_rejected(self):
         p = self.root / "assets/sila-logo.png"
         p.write_bytes(p.read_bytes() + b"changed")
