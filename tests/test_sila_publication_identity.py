@@ -52,7 +52,7 @@ class SilaOwnerIdentityTests(unittest.TestCase):
     def test_sip1_two_authors_pass(self):
         p = self.root / "SIPS/sip-1.md"
         p.write_text(
-            "---\\nsip: 1\\nauthor: Ahmed Ibrahim, Jihad Mustafa\\n---\\n",
+            "---\nsip: 1\nauthor: Ahmed Ibrahim, Jihad Mustafa\n---\n",
             encoding="utf-8",
         )
         logo = (self.root / "assets/sila-logo.png").read_bytes()
@@ -62,7 +62,7 @@ class SilaOwnerIdentityTests(unittest.TestCase):
     def test_sip1_extra_author_is_rejected(self):
         p = self.root / "SIPS/sip-1.md"
         p.write_text(
-            "---\\nsip: 1\\nauthor: Ahmed Ibrahim, Jihad Mustafa, Other\\n---\\n",
+            "---\nsip: 1\nauthor: Ahmed Ibrahim, Jihad Mustafa, Other\n---\n",
             encoding="utf-8",
         )
         self.assertTrue(any("sip-1.md" in s for s in self.issues()))
