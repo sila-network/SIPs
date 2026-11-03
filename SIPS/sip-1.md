@@ -4,7 +4,7 @@ title: SIP Purpose and Guidelines
 description: Defines Sila proposal governance and technical specification rules
 status: Living
 type: Meta
-author: Sila Network (@sila-network)
+author: Ahmed Ibrahim, Jihad Mustafa
 created: 2026-10-22
 ---
 
@@ -12,7 +12,7 @@ created: 2026-10-22
 
 **SIP** means **Sila Improvement Proposal**. A SIP states a Sila-native feature, governance procedure, protocol change, or interoperability rule in a form that can be reviewed, implemented, and tested independently. SIPs belong to Sila Network and must not assert compatibility aliases, identities, forks, networks, or releases from another protocol.
 
-**Sila Network (@sila-network)** is the exclusive issuing authority for Sila SIP documents. Public contributions may be reviewed by authorized Sila editors, but the issuer field remains Sila Network. Proposal publication is distinct from Sila implementation, approval, or activation.
+**Sila Network (@sila-network)** is the exclusive publisher of Sila SIP documents. The only named authors of SIP-1 are **Ahmed Ibrahim** and **Jihad Mustafa**. Authorship is distinct from institutional publication authority, implementation, approval, or activation.
 
 ## SIP Rationale
 
@@ -99,7 +99,7 @@ Every SIP uses a YAML front matter block delimited by three hyphens. The normati
 
 `description`: *A concise statement of the proposed Sila behavior.*
 
-`author`: *Always `Sila Network (@sila-network)` as sole issuer.*
+`author`: *For SIP-1: `Ahmed Ibrahim, Jihad Mustafa`. The issuer remains Sila Network; other documents require truthful, verified attribution.*
 
 `discussions-to`: *An actual Sila Magicians discussion topic when one exists.*
 
@@ -121,7 +121,7 @@ Date values use ISO 8601 (`yyyy-mm-dd`). No fictitious topic, date, authorship, 
 
 ### `author` header
 
-`Sila Network (@sila-network)` is the sole issuer. A reviewer's GitHub account is not a second publisher or an alternative protocol identity.
+The only authors of SIP-1 are **Ahmed Ibrahim** and **Jihad Mustafa**. **Sila Network (@sila-network)** is the sole publication authority, not a third human author. Other documents must use a truthful Sila-approved byline and must not invent authorship.
 
 ### `discussions-to` header
 
