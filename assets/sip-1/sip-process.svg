@@ -1,52 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 300" width="860" height="300" font-family="Helvetica, Arial, sans-serif" font-size="15">
-  <title>SIP Status Diagram</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="488" viewBox="0 0 1200 488" role="img" aria-labelledby="title desc">
+  <title id="title">Sila Improvement Proposal — review and status workflow</title>
+  <desc id="desc">Sila-specific flow: Idea, Draft, Review, Last Call, Final; separate status outcomes Stagnant, Withdrawn and Living. Diagram explains a proposed process, not approval or activation of any particular protocol change.</desc>
   <defs>
-    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
-    </marker>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="7" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M1 1L11 6L1 11Z" fill="#3f5e84"/></marker>
+    <marker id="secondary-arrow" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="7" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M1 1L11 6L1 11Z" fill="#8da1b8"/></marker>
+    <style>
+      text{font-family:Arial,Helvetica,sans-serif;fill:#142943}
+      .title{font-size:27px;font-weight:700}
+      .subtitle{font-size:14px;fill:#526a85}
+      .node{fill:#f5f9ff;stroke:#5982bb;stroke-width:1.6}
+      .success{fill:#e8f7f2;stroke:#319879;stroke-width:1.7}
+      .neutral{fill:#f6f8fc;stroke:#b1bfd1;stroke-width:1.5}
+      .muted{fill:#fff7e7;stroke:#d5a653;stroke-width:1.5}
+      .node-name{font-size:18px;font-weight:700;text-anchor:middle}
+      .node-hint{font-size:12px;fill:#58718c;text-anchor:middle}
+      .edge{fill:none;stroke:#3f5e84;stroke-width:2;marker-end:url(#arrow)}
+      .edge-soft{fill:none;stroke:#8da1b8;stroke-width:1.8;stroke-dasharray:6 5;marker-end:url(#secondary-arrow)}
+      .foot{font-size:13px;fill:#526a85}
+    </style>
   </defs>
-  <rect width="860" height="300" fill="#ffffff"/>
-  <g stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#a)">
-    <!-- main track -->
-    <path d="M120,60 H170"/>
-    <path d="M270,60 H320"/>
-    <path d="M420,60 H470"/>
-    <path d="M570,60 H620"/>
-    <!-- Last Call back to Review -->
-    <path d="M520,82 C520,120 370,120 370,84"/>
-    <!-- to Stagnant -->
-    <path d="M220,82 L360,200"/>
-    <path d="M370,82 L370,200"/>
-    <path d="M520,82 L380,200"/>
-    <!-- Stagnant back to Draft -->
-    <path d="M330,215 C230,215 205,150 210,84"/>
-    <!-- to Withdrawn -->
-    <path d="M240,82 L560,200"/>
-    <path d="M390,82 L570,200"/>
-    <path d="M540,82 L580,200"/>
-  </g>
-  <g stroke="#444" stroke-width="1.5">
-    <rect x="20" y="40" width="100" height="40" rx="6" fill="#f3f3f3" stroke-dasharray="5 4"/>
-    <rect x="170" y="40" width="100" height="40" rx="6" fill="#e8f0fe"/>
-    <rect x="320" y="40" width="100" height="40" rx="6" fill="#e8f0fe"/>
-    <rect x="470" y="40" width="100" height="40" rx="6" fill="#fff4e0"/>
-    <rect x="620" y="40" width="100" height="40" rx="6" fill="#e6f4ea"/>
-    <rect x="330" y="200" width="100" height="40" rx="6" fill="#f3f3f3"/>
-    <rect x="530" y="200" width="100" height="40" rx="6" fill="#fde8e8"/>
-    <rect x="740" y="140" width="100" height="40" rx="6" fill="#e6f4ea"/>
-  </g>
-  <g fill="#111" text-anchor="middle" dominant-baseline="middle">
-    <text x="70" y="60">Idea</text>
-    <text x="220" y="60">Draft</text>
-    <text x="370" y="60">Review</text>
-    <text x="520" y="60">Last Call</text>
-    <text x="670" y="60">Final</text>
-    <text x="380" y="220">Stagnant</text>
-    <text x="580" y="220">Withdrawn</text>
-    <text x="790" y="160">Living</text>
-  </g>
-  <g fill="#555" font-size="12" text-anchor="middle">
-    <text x="445" y="130">normative changes</text>
-    <text x="430" y="270">6 months of inactivity → Stagnant; resurrected by moving back to Draft or its earlier status</text>
-  </g>
+  <rect width="1200" height="488" rx="14" fill="#ffffff"/>
+  <rect x="24" y="24" width="1152" height="440" rx="18" fill="#fbfdff" stroke="#e1e9f3"/>
+  <text class="title" x="58" y="70">SILA / SIP REVIEW PROCESS</text>
+  <text class="subtitle" x="59" y="96">Document states describe Sila governance steps; implementation and activation require separate evidence.</text>
+
+  <!-- Progressive, independently verifiable process -->
+  <path class="edge" d="M233 176H266"/>
+  <path class="edge" d="M446 176H479"/>
+  <path class="edge" d="M659 176H692"/>
+  <path class="edge" d="M872 176H905"/>
+
+  <rect class="neutral" x="53" y="138" rx="13" width="180" height="77"/>
+  <text class="node-name" x="143" y="170">Idea</text>
+  <text class="node-hint" x="143" y="192">Not yet numbered</text>
+  <rect class="node" x="266" y="138" rx="13" width="180" height="77"/>
+  <text class="node-name" x="356" y="170">Draft</text>
+  <text class="node-hint" x="356" y="192">Recorded candidate</text>
+  <rect class="node" x="479" y="138" rx="13" width="180" height="77"/>
+  <text class="node-name" x="569" y="170">Review</text>
+  <text class="node-hint" x="569" y="192">Technical evaluation</text>
+  <rect class="muted" x="692" y="138" rx="13" width="180" height="77"/>
+  <text class="node-name" x="782" y="170">Last Call</text>
+  <text class="node-hint" x="782" y="192">Time-limited review</text>
+  <rect class="success" x="905" y="138" rx="13" width="180" height="77"/>
+  <text class="node-name" x="995" y="170">Final</text>
+  <text class="node-hint" x="995" y="192">Approved specification</text>
+
+  <!-- A material change at Last Call requires renewed review -->
+  <path class="edge-soft" d="M782 138V119H569V138"/>
+  <text class="node-hint" x="680" y="111">Substantive revision</text>
+
+  <text class="subtitle" x="59" y="267">OTHER VALID STATUSES</text>
+  <path class="edge-soft" d="M356 215V281H207V300"/>
+  <path class="edge-soft" d="M569 215V281H608V300"/>
+  <rect class="neutral" x="65" y="300" rx="13" width="284" height="82"/>
+  <text class="node-name" x="207" y="333">Stagnant</text>
+  <text class="node-hint" x="207" y="357">Paused pending renewed work</text>
+  <rect class="neutral" x="464" y="300" rx="13" width="284" height="82"/>
+  <text class="node-name" x="606" y="333">Withdrawn</text>
+  <text class="node-hint" x="606" y="357">Withdrawn with a real record</text>
+  <rect class="success" x="863" y="300" rx="13" width="284" height="82"/>
+  <text class="node-name" x="1005" y="333">Living</text>
+  <text class="node-hint" x="1005" y="357">Continually maintained process</text>
+
+  <path d="M58 411H1142" stroke="#e4eaf2"/>
+  <text class="foot" x="59" y="436">Sila-specific original vector artwork. Status labels do not certify implementation, consensus or network activation.</text>
 </svg>
