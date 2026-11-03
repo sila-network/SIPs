@@ -5,5 +5,12 @@
     "license_basis": "Project owner declared Sila owns its official mark on 2026-10-24; Sila brand asset, reserved and excluded from CC0 text waiver",
     "reviewed_by": "Sila project owner",
     "evidence_reference": "README.md#license"
+  },
+  "assets/sip-1/sip-process.svg": {
+    "sha256": "a3e9ef1d325322398e362fb663ad6c68680e743057c28e1ec43432acfdf24aef",
+    "identity_review": "cleared",
+    "license_basis": "Original Sila-specific SVG drawn from scratch in this project on 2026-11-03, without imported image or diagram content. No third-party asset is incorporated.",
+    "reviewed_by": "Sila project authoring and source-verification session",
+    "evidence_reference": "Sila SIPs commit 74e3aaf9a5058383e4aea0fffc618bc77f0d46a8; byte-identical locally generated SVG checked by SHA-256"
   }
 }
