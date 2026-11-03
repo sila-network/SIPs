@@ -3,20 +3,20 @@
 <!-- markdownlint-disable-next-line MD033 -->
 <p align="center"><img src="./assets/sila-logo.png" alt="Sila" width="160"></p>
 
-The goal of the SIP project is to standardize and provide high-quality documentation for Sila itself and conventions built upon it. This repository tracks past and ongoing improvements to Sila in the form of Sila Improvement Proposals (SIPs). [SIP-1](./SIPS/sip-1.md) governs how SIPs are published.
+This repository contains proposed Sila-native protocol and governance specifications. A document is not evidence that a Sila discussion, decision, implementation, release, or activation has occurred. [SIP-1](./SIPS/sip-1.md) defines the proposal process and credits Ahmed Ibrahim and Jihad Mustafa as its authors. Sila Network is the publication authority.
 
-The [status page](https://sips.silachain.org/) tracks and lists SIPs, which can be divided into the following categories:
+The proposed Sila specification categories are listed below. The public canonical site is not yet verified as a publication of this repository:
 
 - **Core SIPs** are improvements to the Sila consensus protocol.
 - **Networking SIPs** specify the peer-to-peer networking layer of Sila.
 - **Interface SIPs** standardize interfaces to Sila, which determine how users and applications interact with the blockchain.
-- **SRCs** specify application layer standards, which determine how applications running on Sila can interact with each other. SRCs are maintained in the [SRCs repository](https://github.com/sila-chain/SRCs).
+- **SRCs** specify application layer standards. The institutional Sila SRC corpus and its implementation dependencies must be verified separately; a routing reference does not imply adoption.
 - **Meta SIPs** are miscellaneous improvements that nonetheless require some sort of consensus.
 - **Informational SIPs** are non-standard improvements that do not require any form of consensus.
 
-**Before you write an SIP, ideas MUST be thoroughly discussed on [Sila Magicians](https://sila-magicians.discourse.group/) in the [SIPs category](https://sila-magicians.discourse.group/c/sips/5). Once consensus is reached, thoroughly read and review [SIP-1](./SIPS/sip-1.md), which describes the SIP process, and start from the [SIP template](./sip-template.md).**
+New proposals may be discussed at [Sila Magicians](https://sila-magicians.discourse.group/) and must follow [SIP-1](./SIPS/sip-1.md) and the [SIP template](./sip-template.md). A `discussions-to` value is used only for a genuine Sila discussion topic that already exists; no past discussion or consensus is implied.
 
-Please note that this repository is for documenting standards and not for help implementing them. For specific questions and concerns regarding SIPs, it's best to comment on the relevant discussion thread of the SIP denoted by the `discussions-to` tag in the SIP's preamble.
+This repository documents candidate specifications, not implementation support. Technical claims require independent Sila-owned code, tests, security review, and a recorded Sila governance decision before adoption.
 
 ## Repository Layout
 
@@ -30,11 +30,9 @@ Please note that this repository is for documenting standards and not for help i
 | [`tests/`](./tests) | Repository checks, run with `tests/run.sh` |
 | [`LICENSE.md`](./LICENSE.md) | CC0 1.0 Universal |
 
-## Preferred Citation Format
+## Source and Publication Status
 
-The canonical URL for an SIP that has achieved draft status at any point is at <https://sips.silachain.org/>. For example, the canonical URL for SIP-1 is <https://sips.silachain.org/SIPS/sip-1>.
-
-Consider any document not published at <https://sips.silachain.org/> as a working paper. Additionally, consider published SIPs with a status of "draft", "review", or "last call" to be incomplete drafts, and note that their specification is likely to be subject to change.
+Use a pinned Sila GitHub revision to cite a working document until a Sila-controlled canonical publication is verified. A document in Draft, Review, or Last Call is not an approved network rule. A Living process document likewise does not establish protocol activation. Do not infer Sila history from imported references.
 
 ## Validation
 
@@ -50,6 +48,6 @@ sipw/target/release/sipw --config ./config/sipw.toml SIPS/sip-N.md
 
 ## License
 
-All SIPs are released into the public domain: copyright and related rights waived via [CC0](./LICENSE.md).
+Sila-authored specification text may be released under [CC0](./LICENSE.md) only to the extent that its authorized rights holders control those rights. Unresolved third-party text, code, and assets are not automatically relicensed by this repository.
 
 **Brand notice:** The Sila logo shown above is supplied and identified by the Sila project owner as the official Sila mark. The logo is a reserved brand asset and is **not** covered by this repository's CC0 waiver for specification text. The Sila logo is reserved for Sila and is not released under the specification-text license.
