@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 SILA_ISSUER = "Sila Network (@sila-network)"
+SIP1_AUTHORS = "Ahmed Ibrahim, Jihad Mustafa"
 LOGO_PATH = "assets/sila-logo.png"
 LOGO_SHA256 = "26bf32c6fb7f76a8e6143dc1cd07c3839a6a7ff930d28498af7f5e5fd4e866da"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -33,7 +34,10 @@ def check(root: Path) -> list[str]:
             violations.append(f"{path.name}: malformed preamble")
             continue
         issuers = re.findall(r"^author:\s*(.*?)\s*$", front.group(1), re.M)
-        if issuers != [SILA_ISSUER]:
+        if path.name == "sip-1.md":
+            if issuers != [SIP1_AUTHORS]:
+                violations.append("sip-1.md: expected exact Sila-authored SIP-1 byline")
+        elif issuers != [SILA_ISSUER]:
             violations.append(f"{path.name}: expected one Sila Network adaptation issuer")
 
     logo = root / LOGO_PATH
