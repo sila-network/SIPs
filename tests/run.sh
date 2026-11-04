@@ -122,6 +122,16 @@ for path in paths:
         continue
     if metadata.get("sip") != number:
         errors.append(f"{path}: proposal number does not match filename")
+    # SRC routing records are reference pointers, not adopted SIP documents.
+    # Never invent a Sila governance state, creation date or author for them.
+    if metadata.get("reference_kind") == "src":
+        if metadata.get("category") != "SRC":
+            errors.append(f"{path}: SRC routing record has an invalid category")
+        if any(metadata.get(name) for name in ("status", "created", "type")):
+            errors.append(f"{path}: SRC routing record falsely presents proposal metadata")
+        if f"SRC-{number}" not in contents:
+            errors.append(f"{path}: SRC routing record has no matching Sila reference")
+        continue
     for field in ("title", "description", "author", "status", "type", "created"):
         if not metadata.get(field):
             errors.append(f"{path}: {field} is unverified or missing")
