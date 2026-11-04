@@ -83,6 +83,74 @@ echo "INFO     Sila SIP documents: $count"
 if [ "$count" -ne 966 ]; then
   blocker "full Sila candidate set not validated ($count of 966)"
 fi
+if [ "$count" -eq 966 ]; then
+  # A file count alone cannot certify the full corpus. Do not manufacture dates,
+  # proposal states or contributor information to make this validation pass.
+  if python3 - <<'PY'
+from pathlib import Path
+import datetime
+import re
+import yaml
+
+errors = []
+seen = set()
+allowed_status = {"Draft", "Review", "Last Call", "Final", "Stagnant", "Withdrawn", "Living"}
+allowed_types = {"Standards Track", "Meta", "Informational"}
+allowed_categories = {"Core", "Networking", "Interface", "SRC"}
+paths = sorted(Path("SIPS").glob("sip-*.md"))
+for path in paths:
+    match = re.fullmatch(r"sip-([0-9]+)\\.md", path.name)
+    if not match:
+        errors.append(f"{path}: invalid proposal filename")
+        continue
+    number = int(match.group(1))
+    if number in seen:
+        errors.append(f"{path}: duplicate proposal identifier")
+    seen.add(number)
+    contents = path.read_text(encoding="utf-8")
+    preamble = re.match(r"\\A---\\n(.*?)\\n---(?:\\n|\\Z)", contents, re.S)
+    if not preamble:
+        errors.append(f"{path}: missing YAML preamble")
+        continue
+    try:
+        metadata = yaml.safe_load(preamble.group(1))
+    except yaml.YAMLError as error:
+        errors.append(f"{path}: malformed YAML ({error.__class__.__name__})")
+        continue
+    if not isinstance(metadata, dict):
+        errors.append(f"{path}: YAML preamble is not a mapping")
+        continue
+    if metadata.get("sip") != number:
+        errors.append(f"{path}: proposal number does not match filename")
+    for field in ("title", "description", "author", "status", "type", "created"):
+        if not metadata.get(field):
+            errors.append(f"{path}: {field} is unverified or missing")
+    if metadata.get("status") and metadata["status"] not in allowed_status:
+        errors.append(f"{path}: status is not an approved Sila state")
+    if metadata.get("type") and metadata["type"] not in allowed_types:
+        errors.append(f"{path}: unrecognized proposal type")
+    if metadata.get("type") == "Standards Track" and metadata.get("category") not in allowed_categories:
+        errors.append(f"{path}: missing or invalid category")
+    created = metadata.get("created")
+    if created and not (isinstance(created, datetime.date) and not isinstance(created, datetime.datetime)):
+        if not (isinstance(created, str) and re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", created)):
+            errors.append(f"{path}: created must be an actual ISO calendar date")
+        else:
+            try:
+                datetime.date.fromisoformat(created)
+            except ValueError:
+                errors.append(f"{path}: created is not a valid date")
+print(f"Sila corpus preamble audit: {len(paths)} documents, {len(errors)} findings")
+for message in errors[:15]:
+    print("CORPUS HOLD:", message)
+raise SystemExit(bool(errors))
+PY
+  then
+    pass "all 966 Sila candidate headers are internally consistent"
+  else
+    blocker "full Sila corpus metadata and proposal decisions are not yet verified"
+  fi
+fi
 if [ ! -f SIPS/sip-8096.md ]; then
   blocker "SIP-8096 requires an unverified Sila-native specification"
 fi
