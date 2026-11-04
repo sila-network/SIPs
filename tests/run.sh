@@ -99,7 +99,7 @@ allowed_types = {"Standards Track", "Meta", "Informational"}
 allowed_categories = {"Core", "Networking", "Interface", "SRC"}
 paths = sorted(Path("SIPS").glob("sip-*.md"))
 for path in paths:
-    match = re.fullmatch(r"sip-([0-9]+)\\.md", path.name)
+    match = re.fullmatch(r"sip-([0-9]+)\.md", path.name)
     if not match:
         errors.append(f"{path}: invalid proposal filename")
         continue
@@ -108,7 +108,7 @@ for path in paths:
         errors.append(f"{path}: duplicate proposal identifier")
     seen.add(number)
     contents = path.read_text(encoding="utf-8")
-    preamble = re.match(r"\\A---\\n(.*?)\\n---(?:\\n|\\Z)", contents, re.S)
+    preamble = re.match(r"\A---\n(.*?)\n---(?:\n|\Z)", contents, re.S)
     if not preamble:
         errors.append(f"{path}: missing YAML preamble")
         continue
@@ -133,7 +133,7 @@ for path in paths:
         errors.append(f"{path}: missing or invalid category")
     created = metadata.get("created")
     if created and not (isinstance(created, datetime.date) and not isinstance(created, datetime.datetime)):
-        if not (isinstance(created, str) and re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", created)):
+        if not (isinstance(created, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", created)):
             errors.append(f"{path}: created must be an actual ISO calendar date")
         else:
             try:
