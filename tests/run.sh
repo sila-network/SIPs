@@ -86,9 +86,16 @@ fi
 if [ ! -f SIPS/sip-8096.md ]; then
   blocker "SIP-8096 requires an unverified Sila-native specification"
 fi
-site="$(curl -sSL -m 20 https://sips.silachain.org/SIPS/sip-1 || true)"
-if echo "$site" | grep -iE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\.org' >/dev/null; then
-  blocker "public Sila SIP domain points to another publication"
+site_url="https://sips.silachain.org/SIPS/sip-1"
+site_file="$WORK/public-sila-sip-1.html"
+if ! curl --fail --silent --show-error --location --max-time 20 "$site_url" --output "$site_file"; then
+  blocker "public Sila SIP-1 is not independently reachable at the official domain"
+elif grep -qiE 'Martin Becze|Hudson Jameson|lightclient|sila-magicians\\.org' "$site_file"; then
+  blocker "public Sila SIP domain points to an unrelated publication"
+elif ! grep -Fq 'SIP Purpose and Guidelines' "$site_file" ||
+     ! grep -Fq 'Ahmed Ibrahim' "$site_file" ||
+     ! grep -Fq 'Jihad Mustafa' "$site_file"; then
+  blocker "public Sila SIP-1 does not match the verified Sila title and authors"
 fi
 echo
 echo "failed checks: $failed, open blockers: $blockers"
