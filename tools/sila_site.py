@@ -42,6 +42,10 @@ def inline(text: str) -> str:
             local = not parsed.scheme and not parsed.netloc and not href.startswith(("/", "\\"))
             external = parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password
             if local or external:
+                # Sila source links target Markdown, but the generated site
+                # publishes SIP pages as HTML. Preserve local fragments.
+                if local and re.fullmatch(r"sip-[1-9][0-9]*\.md", parsed.path.rsplit("/", 1)[-1]):
+                    href = parsed._replace(path=parsed.path[:-3] + ".html").geturl()
                 output.append(f'<a href="{safe(href)}">{safe(label)}</a>')
             else:
                 output.append(safe(token))
@@ -450,6 +454,14 @@ def verify_site(output: Path, documents: list[tuple[Path, dict, str]], statuses:
             linked = (path.parent / unquote(destination.path)).resolve() if destination.path else path.resolve()
             if not linked.is_relative_to(output) or not linked.is_file():
                 raise SiteError(f"broken generated Sila link in {relative}: {url}")
-            if destination.fragment and linked == path:
-                if unquote(destination.fragment) not in parsed.ids:
+            if destination.fragment:
+                if linked.suffix != ".html":
+                    raise SiteError(f"fragment targets an unrendered Sila file in {relative}: {url}")
+                if linked == path:
+                    target_ids = parsed.ids
+                else:
+                    parsed_target = LocalLinks()
+                    parsed_target.feed(linked.read_text(encoding="utf-8"))
+                    target_ids = parsed_target.ids
+                if unquote(destination.fragment) not in target_ids:
                     raise SiteError(f"missing Sila page anchor in {relative}: {url}")

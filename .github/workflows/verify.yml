@@ -21,6 +21,8 @@ jobs:
         run: python3 --version
       - name: Test native Sila implementation
         run: python3 -m unittest discover -s tests -v
+      - name: Exercise the isolated Sila proposal lifecycle
+        run: python3 -m unittest discover -s tests -p 'test_sila_flow.py' -v
       - name: Audit Sila-only identity
         run: python3 tools/sila.py audit
       - name: Validate Sila proposals

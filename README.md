@@ -87,3 +87,30 @@ python3 -m http.server 8000 --directory _site
 
 Open `http://localhost:8000` on the computer running that server.
 No public deployment or domain change is performed by these commands.
+
+## Integrated lifecycle verification
+
+The original [Sila end-to-end test suite](tests/test_sila_flow.py)
+executes the actual offline Sila CLI within an isolated temporary project:
+
+1. Draft a **test-only** SIP with a genuine dependency on SIP-1.
+2. Run the same native specification check and identity checks used by CI.
+3. Generate and verify the searchable site, category and status pages, RSS,
+   proposal metadata, and converted cross-document links and heading anchors.
+4. Exercise the actual review-gate decision logic using **synthetic GitHub
+   event and review fixtures**, including positive and rejection scenarios.
+5. Remove the test-only SIP and confirm that rebuilt site files and search
+   indexes no longer expose it.
+
+A synthetic review is NEVER a real human approval or governance decision.
+No test SIP or simulated reviewer is committed to this repository.
+
+Run the lifecycle tests explicitly with:
+
+```sh
+python3 -m unittest discover -s tests -p test_sila_flow.py -v
+```
+
+The production PR review step still requires actual authorized reviewers
+and real GitHub review records. Administrative branch-protection settings
+remain a separate, mandatory requirement for final publication readiness.
