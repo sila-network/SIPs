@@ -203,12 +203,26 @@ class ReviewDecisionTests(unittest.TestCase):
         self.assertTrue(passed)
         self.assertEqual(reasons, [])
 
-    def test_two_roles_need_distinct_approved_people(self):
+    def test_one_authorized_person_can_cover_both_review_roles(self):
         p = with_reviewers()
         p["reviewers"]["technical"] = ["Sila-editor"]
         passed, reasons = require_reviews(p, {"editor", "technical"}, {"sila-editor"})
+        self.assertTrue(passed)
+        self.assertEqual(reasons, [])
+
+    def test_both_roles_must_still_be_explicitly_authorized(self):
+        p = with_reviewers()
+        passed, reasons = require_reviews(p, {"editor", "technical"}, {"sila-editor"})
         self.assertFalse(passed)
-        self.assertIn("distinct authorized accounts", reasons[0])
+        self.assertEqual(len(reasons), 1)
+
+    def test_a_pr_author_cannot_approve_their_own_dual_role(self):
+        p = with_reviewers()
+        p["reviewers"]["technical"] = ["Sila-editor"]
+        actual = approved_reviewers([review("Sila-editor")], HEAD, "Sila-editor")
+        passed, reasons = require_reviews(p, {"editor", "technical"}, actual)
+        self.assertFalse(passed)
+        self.assertEqual(len(reasons), 2)
 
     def test_invalid_review_record_does_not_bypass_gate(self):
         with self.assertRaises(ReviewError):

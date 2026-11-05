@@ -41,8 +41,9 @@ The [Sila review gate](tools/sila_review.py) verifies the changed file list and 
 GitHub APPROVED reviews against the explicitly authorized identities in
 [the Sila reviewer policy](config/sila-review.toml).
 
-- Sila specifications require an authorized editorial review and a separate
-  authorized technical review.
+- Sila specifications require editorial and technical role authorization.
+  One real reviewer may hold both roles if explicitly appointed to both and
+  independent of the pull-request author.
 - Code and automation changes require an authorized technical review.
 - Other documents and assets require an authorized editorial review.
 - Changing the reviewer policy in the same pull request cannot authorize the

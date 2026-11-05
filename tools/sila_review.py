@@ -140,19 +140,10 @@ def require_reviews(
             missing.append(f"{role}: no Sila reviewer has been authorized")
         elif not (authorized & approved):
             missing.append(f"{role}: missing current-head approval from an authorized reviewer")
-    if missing:
-        return False, missing
-    # Different roles require different independent human approvals.
-    candidates = [({login.casefold() for login in policy["reviewers"][role]} & approved)
-                  for role in sorted(roles)]
-    def distinct(index: int, selected: set[str]) -> bool:
-        if index == len(candidates):
-            return True
-        return any(distinct(index + 1, selected | {login})
-                   for login in candidates[index] if login not in selected)
-    if not distinct(0, set()):
-        return False, ["independent Sila review roles require distinct authorized accounts"]
-    return True, []
+    # An authorized person may hold both roles, provided that the approver
+    # is independent of the PR author (enforced by approved_reviewers).
+    # Each role still requires an explicit appointment and current approval.
+    return not missing, missing
 
 
 def github_pages(repo: str, number: int, endpoint: str, token: str) -> list[dict]:
