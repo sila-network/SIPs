@@ -125,8 +125,8 @@ def verify_metadata(meta: dict[str, str], filename: str, known: set[int]) -> Non
             raise SilaError(f"{filename}: invalid Last Call deadline") from error
     if meta["status"] == "Withdrawn" and not meta.get("withdrawal-reason"):
         raise SilaError(f"{filename}: Withdrawn requires a reason")
-    if meta["status"] == "Final" and not meta.get("approval-ref"):
-        raise SilaError(f"{filename}: no real Sila approval reference")
+    if meta["status"] in ("Final", "Living") and not meta.get("approval-ref"):
+        raise SilaError(f"{filename}: approved Sila status needs a real decision reference")
     if meta["status"] == "Living" and meta["type"] != "Meta":
         raise SilaError(f"{filename}: Living is reserved for Sila process documents")
     if meta.get("discussions-to"):
