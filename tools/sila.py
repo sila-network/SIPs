@@ -19,6 +19,11 @@ if __package__:
 else:
     from sila_specs import ProposalError, validate_repository as validate_sila_repository
 
+if __package__:
+    from .sila_site import SiteError, build_site as render_site, verify_site as check_site
+else:
+    from sila_site import SiteError, build_site as render_site, verify_site as check_site
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = tomllib.loads((ROOT / "config" / "sila.toml").read_text(encoding="utf-8"))
@@ -29,7 +34,7 @@ VALID_FIELDS = {
     "created", "requires", "discussions-to", "last-call-deadline",
     "withdrawal-reason", "approval-ref", "implementation-ref"
 }
-TEXT_SUFFIXES = {".md", ".py", ".toml", ".json", ".yml", ".yaml", ".html", ".css", ".svg", ".sh", ".txt"}
+TEXT_SUFFIXES = {".md", ".py", ".toml", ".json", ".yml", ".yaml", ".html", ".css", ".js", ".xml", ".svg", ".sh", ".txt"}
 IGNORE_DIRS = {".git", "_site", "__pycache__", ".venv"}
 # Denial signatures are encoded to avoid inserting a foreign protocol identity
 # into a Sila-owned source file, including when auditing the auditor itself.
@@ -272,58 +277,18 @@ def render_markdown(body: str) -> str:
     return "\n".join(output)
 
 
-def page(title: str, body: str, prefix: str = "") -> str:
-    css = prefix + "assets/site.css"
-    home = prefix + "index.html"
-    return (f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
-            f'<meta name="viewport" content="width=device-width, initial-scale=1">'
-            f'<title>{escape(title)} | Sila</title>'
-            f'<link rel="stylesheet" href="{css}"></head><body>'
-            f'<header><a href="{home}">SILA NETWORK</a><small>Original Sila protocol specifications</small></header>'
-            f'<main>{body}</main><footer>Original Sila specification foundation. '
-            f'Publication does not establish network activation.</footer></body></html>\n')
-
-
 def build_site(output: Path, documents: list[tuple[Path, dict[str, str], str]]) -> None:
-    output.mkdir(parents=True, exist_ok=True)
-    (output / "assets").mkdir(exist_ok=True)
-    (output / "SIPS").mkdir(exist_ok=True)
-    shutil.copyfile(ROOT / "assets" / "site.css", output / "assets" / "site.css")
-    rows = []
-    for path, metadata, body in documents:
-        name = f'SIP-{metadata["sip"]}: {metadata["title"]}'
-        row = (f'<li><a href="SIPS/sip-{metadata["sip"]}.html">{escape(name)}</a>'
-               f'<small>{escape(metadata["status"])} · {escape(metadata["type"])}'
-               f' · {escape(metadata["author"])}</small></li>')
-        rows.append(row)
-        metastr = "".join(
-            f"<span><b>{escape(key)}:</b> {escape(metadata[key])}</span>"
-            for key in ("sip", "author", "status", "type", "created")
-        )
-        article = (f"<h1>{escape(name)}</h1><div class=\"meta\">{metastr}</div>"
-                   f"{render_markdown(body)}")
-        destination = output / "SIPS" / f'sip-{metadata["sip"]}.html'
-        destination.write_text(page(name, article, "../"), encoding="utf-8")
-    index = "<h1>Sila Improvement Proposals</h1><p>New, independently written Sila proposals. No protocol activation is implied.</p>"
-    index += '<ul class="collection">' + "".join(rows) + "</ul>"
-    (output / "index.html").write_text(page("Sila specifications", index), encoding="utf-8")
+    try:
+        render_site(ROOT, output, documents, SETTINGS["governance"]["statuses"])
+    except SiteError as error:
+        raise SilaError(str(error)) from error
 
 
 def verify_site(output: Path, documents: list[tuple[Path, dict[str, str], str]]) -> None:
-    required = [output / "index.html", output / "assets" / "site.css"]
-    required += [output / "SIPS" / f'sip-{metadata["sip"]}.html' for _, metadata, _ in documents]
-    for path in required:
-        if not path.is_file() or path.stat().st_size == 0:
-            raise SilaError(f"site file missing: {path}")
-    index = (output / "index.html").read_text(encoding="utf-8")
-    for _, metadata, _ in documents:
-        if f'SIPS/sip-{metadata["sip"]}.html' not in index:
-            raise SilaError("Sila page absent from index")
-    for path in required:
-        if path.suffix == ".html":
-            content = path.read_text(encoding="utf-8")
-            if "<!doctype html>" not in content or "<title>" not in content:
-                raise SilaError("invalid Sila HTML output")
+    try:
+        check_site(output, documents, SETTINGS["governance"]["statuses"])
+    except SiteError as error:
+        raise SilaError(str(error)) from error
 
 
 def main() -> int:
@@ -340,7 +305,7 @@ def main() -> int:
         elif args.command == "build":
             if audit():
                 raise SilaError("Sila identity audit must pass before building")
-            build_site((ROOT / args.output).resolve(), documents)
+            build_site(ROOT / args.output, documents)
             print(f"PASS: built {len(documents)} Sila proposal page(s)")
         else:
             verify_site((ROOT / args.output).resolve(), documents)

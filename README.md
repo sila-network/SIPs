@@ -59,3 +59,31 @@ A passing check does not itself establish an authorized governance decision.
 To enforce a mandatory merge block, GitHub's repository rules must require
 the corresponding check on the target protected branch; this software cannot
 substitute for repository administration settings.
+
+## Sila documentation website
+
+The original Sila static website is generated from verified proposal source;
+it does not import third-party themes, remote fonts or client-side libraries.
+
+- [Sila site generator](tools/sila_site.py) builds the home page, an individual
+  accessible HTML page for each real SIP, six category pages, eight status
+  pages, the searchable JSON index, and the original RSS 2.0 feed.
+- [Sila styling](assets/site.css) adapts to phones and respects reduced motion.
+- [Sila local search](assets/site.js) filters by text, category, and status;
+  all documents remain browsable when JavaScript is disabled.
+- The feed links to actual Sila source revisions on the current working branch
+  until the official domain is configured and publicly deployed.
+- A generated `_site/` preview is local build output, not a public release.
+  It MUST NOT be treated as a Final SIP or network activation.
+
+To preview locally (using only Python's standard library):
+
+```sh
+python3 tools/sila.py check
+python3 tools/sila.py build --output _site
+python3 tools/sila.py verify-site --output _site
+python3 -m http.server 8000 --directory _site
+```
+
+Open `http://localhost:8000` on the computer running that server.
+No public deployment or domain change is performed by these commands.
