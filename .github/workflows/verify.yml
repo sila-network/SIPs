@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   native-checks:
@@ -28,3 +29,10 @@ jobs:
         run: python3 tools/sila.py build --output _site
       - name: Validate generated pages
         run: python3 tools/sila.py verify-site --output _site
+      - name: Validate native Sila reviewer policy
+        run: python3 tools/sila_review.py policy
+      - name: Require authorized independent GitHub PR reviews
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/sila_review.py pull-request

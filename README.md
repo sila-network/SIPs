@@ -34,3 +34,27 @@ The initial named authors of SIP-1 are Ahmed Ibrahim and Jihad Mustafa. Addition
 ## Rights
 
 Sila Network reserves the rights in this newly written Sila-owned repository content. See [LICENSE.md](LICENSE.md). No external protocol source files or third-party application assets are included.
+
+## Original Sila PR review gate
+
+The [Sila review gate](tools/sila_review.py) verifies the changed file list and real
+GitHub APPROVED reviews against the explicitly authorized identities in
+[the Sila reviewer policy](config/sila-review.toml).
+
+- Sila specifications require an authorized editorial review and a separate
+  authorized technical review.
+- Code and automation changes require an authorized technical review.
+- Other documents and assets require an authorized editorial review.
+- Changing the reviewer policy in the same pull request cannot authorize the
+  change being reviewed.
+- Stale, withdrawn, dismissed, or self-issued reviews are not accepted.
+- No reviewers are appointed by this code. The initial roster is empty, so
+  applicable pull requests remain blocked until real reviewer accounts are
+  separately authorized by Sila Network.
+- The gate has GitHub **read-only** permissions. It cannot approve, publish,
+  merge, assign reviewers, or change a proposal's governance status.
+
+A passing check does not itself establish an authorized governance decision.
+To enforce a mandatory merge block, GitHub's repository rules must require
+the corresponding check on the target protected branch; this software cannot
+substitute for repository administration settings.

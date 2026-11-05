@@ -1,0 +1,13 @@
+# Original Sila review policy. No reviewer is assumed to be authorized.
+# Sila Network must authorize real GitHub reviewer accounts separately.
+# This file is not itself proof of any governance appointment.
+
+[review]
+repository = "sila-network/SIPs"
+spec_roles = ["editor", "technical"]
+code_roles = ["technical"]
+content_roles = ["editor"]
+
+[reviewers]
+editor = []
+technical = []
