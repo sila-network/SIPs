@@ -30,6 +30,7 @@ class SiteTests(unittest.TestCase):
 
     def test_01_existing_sila_content_builds(self) -> None:
         verify_site(self.output, self.documents)
+        verify(self.output, self.documents, self.statuses)
 
     def test_02_index_contains_actual_sila_proposal(self) -> None:
         html = self.page("index.html")
@@ -126,7 +127,7 @@ class SiteTests(unittest.TestCase):
     def test_16_rights_document_link_resolves(self) -> None:
         self.assertTrue((self.output / "LICENSE.md").is_file())
         self.assertIn('href="../LICENSE.md"', self.page("SIPS/sip-1.html"))
-        verify_site(self.output, self.documents)
+        verify(self.output, self.documents, self.statuses)
 
     def test_17_sanitizes_raw_script_content(self) -> None:
         result = markdown("## Section\n\n<script>alert(1)</script>")
@@ -165,38 +166,38 @@ class SiteTests(unittest.TestCase):
     def test_24_missing_site_asset_blocks(self) -> None:
         (self.output / "assets/site.js").unlink()
         with self.assertRaisesRegex(SiteError, "missing generated"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_25_missing_html_navigation_link_blocks(self) -> None:
         index = self.output / "index.html"
         index.write_text(index.read_text().replace("categories/index.html", "categories/gone.html"))
         with self.assertRaisesRegex(SiteError, "broken generated Sila link"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_26_missing_internal_anchor_blocks(self) -> None:
         index = self.output / "index.html"
         index.write_text(index.read_text().replace('href="#catalog"', 'href="#not-here"'))
         with self.assertRaisesRegex(SiteError, "missing Sila page anchor"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_27_malformed_search_index_blocks(self) -> None:
         records = json.loads(self.page("search.json"))
         records[0]["number"] = 999
         (self.output / "search.json").write_text(json.dumps(records))
         with self.assertRaisesRegex(SiteError, "searchable index is incomplete"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_28_mismatched_feed_count_blocks(self) -> None:
         feed_path = self.output / "feed.xml"
         feed_path.write_text('<rss version="2.0"><channel></channel></rss>')
         with self.assertRaisesRegex(SiteError, "RSS feed is inconsistent"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_29_external_script_is_not_allowed(self) -> None:
         index = self.output / "index.html"
         index.write_text(index.read_text().replace('src="assets/site.js"', 'src="https://outside.invalid/script.js"'))
         with self.assertRaisesRegex(SiteError, "externally hosted"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_30_build_does_not_overwrite_sila_source_root(self) -> None:
         with self.assertRaisesRegex(SiteError, "unsafe output directory"):
@@ -259,12 +260,12 @@ class SiteTests(unittest.TestCase):
     def test_invalid_search_json_is_reported_as_site_error(self) -> None:
         (self.output / "search.json").write_text("{not-json", encoding="utf-8")
         with self.assertRaisesRegex(SiteError, "invalid Sila searchable index"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_invalid_xml_is_reported_as_site_error(self) -> None:
         (self.output / "feed.xml").write_text("<rss><unclosed>", encoding="utf-8")
         with self.assertRaisesRegex(SiteError, "invalid Sila RSS XML"):
-            verify_site(self.output, self.documents)
+            verify(self.output, self.documents, self.statuses)
 
     def test_40_no_placeholder_publication_record(self) -> None:
         self.assertEqual(len(self.documents), 1)

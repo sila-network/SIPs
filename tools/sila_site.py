@@ -418,6 +418,8 @@ def verify_site(output: Path, documents: list[tuple[Path, dict, str]], statuses:
         if (not isinstance(records, list) or len(records) != len(documents)
                 or {item["number"]: item["path"] for item in records} != correct):
             raise SiteError("Sila searchable index is incomplete")
+    except SiteError:
+        raise
     except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
         raise SiteError("invalid Sila searchable index") from error
     try:
