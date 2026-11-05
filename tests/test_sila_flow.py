@@ -158,8 +158,9 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
 
     def review(self, *, authorized: bool = False, reviewer: str = "sila-reviewer",
                sha: str = REVISION, status: str = "APPROVED", author: str = "sila-chain",
-               changed_path: str = "SIPS/sip-2.md") -> tuple[bool, list[str]]:
-        files = [{"filename": changed_path, "status": "added"}]
+               changed_path: str = "SIPS/sip-2.md",
+               changed_status: str = "added") -> tuple[bool, list[str]]:
+        files = [{"filename": changed_path, "status": changed_status}]
         responses = [files, [mock_approval(reviewer, sha, state=status)], [
             {"id": 901, "user": {"login": "sila-chain"},
              "body": f"SILA FINAL APPROVE {REVISION}",
@@ -277,7 +278,8 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
 
     def test_editing_review_policy_cannot_auto_authorize_its_change(self) -> None:
         allowed, blockers = self.review(
-            authorized=True, changed_path="config/sila-review.toml"
+            authorized=True, changed_path="config/sila-review.toml",
+            changed_status="modified"
         )
         self.assertFalse(allowed)
         self.assertIn("cannot authorize itself", blockers[0])
