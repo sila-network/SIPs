@@ -13,6 +13,12 @@ import sys
 import tomllib
 from urllib.parse import urlsplit
 
+# Use the same Sila-native specification engine for checks and site builds.
+if __package__:
+    from .sila_specs import ProposalError, validate_repository as validate_sila_repository
+else:
+    from sila_specs import ProposalError, validate_repository as validate_sila_repository
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = tomllib.loads((ROOT / "config" / "sila.toml").read_text(encoding="utf-8"))
@@ -161,20 +167,10 @@ def validate_document(path: Path, known: set[int]) -> tuple[dict[str, str], str]
 
 
 def read_collection() -> list[tuple[Path, dict[str, str], str]]:
-    entries = sorted(DOC_DIR.glob("sip-*.md"))
-    if not entries:
-        raise SilaError("no original Sila documents found")
-    known = set()
-    for path in entries:
-        matched = re.fullmatch(r"sip-([1-9][0-9]*)\.md", path.name)
-        if matched is None or int(matched.group(1)) in known:
-            raise SilaError(f"duplicate or invalid Sila proposal number: {path.name}")
-        known.add(int(matched.group(1)))
-    documents = [(path, *validate_document(path, known)) for path in entries]
-    if 1 not in known:
-        raise SilaError("SIP-1 has not been created")
-    return documents
-
+    try:
+        return validate_sila_repository(ROOT)
+    except ProposalError as error:
+        raise SilaError(str(error)) from error
 
 def audit(root: Path = ROOT) -> int:
     checked = 0

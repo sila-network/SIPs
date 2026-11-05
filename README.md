@@ -8,13 +8,14 @@ This repository begins with a clean Sila specification and tooling foundation. I
 
 - [SIP-1](SIPS/sip-1.md): initial Sila governance proposal.
 - [Proposal template](sip-template.md): format for new Sila proposals.
-- [Native Sila tool](tools/sila.py): format validation, dependency checks, identity audit, and website generation.
+- [Sila native specification checker](tools/sila_specs.py): strict metadata, sections, safe links and anchors, and normative dependency graphs.
+- [Sila command and site tool](tools/sila.py): runs checks and builds local documentation.
 - [Sila verification](.github/workflows/verify.yml): read-only continuous integration.
 - [Sila website styling](assets/site.css): original site presentation.
 
 ## Commands
 
-Requires Python 3.11 or later. There are no third-party runtime packages.
+Requires Python 3.11 or later. There are no third-party runtime packages. This offline checker does not establish external discussion, governance approval, or network activation.
 
 1. Run unit tests: python3 -m unittest discover -s tests -v
 2. Inspect proposal consistency: python3 tools/sila.py check
