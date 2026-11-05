@@ -114,3 +114,40 @@ python3 -m unittest discover -s tests -p test_sila_flow.py -v
 The production PR review step still requires actual authorized reviewers
 and real GitHub review records. Administrative branch-protection settings
 remain a separate, mandatory requirement for final publication readiness.
+
+## Final Sila closure gate (read-only)
+
+The [Sila closure checker](tools/sila_closure.py) inspects current GitHub
+protection rules and the explicitly configured Sila reviewer roster. It does
+not invent reviewers, authorize a proposal, post a new record, publish a site,
+or merge a branch.
+
+Run the local Pure Sila and lifecycle verification, then run the remote
+administrative preflight:
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 tools/sila.py audit
+python3 tools/sila.py check
+python3 tools/sila.py build --output _site
+python3 tools/sila.py verify-site --output _site
+python3 tools/sila_closure.py check
+```
+
+The final command returns a nonzero status until all of these are true:
+
+- A real GitHub account **other than the change author** has been explicitly
+  appointed to each required reviewer role.
+- Active GitHub rules cover `main` and require the successful
+  `native-checks` status, at least one real independent approval, stale
+  review dismissal, resolution of review threads, and linear history.
+- No unknown actor bypasses those controls.
+
+A passing administrative preflight is necessary but NOT sufficient for final
+closure. The team must still independently verify a real PR review run and
+decision, confirm the exact latest HEAD, inspect all residual technical and
+rights blockers, and deliberately approve any merge or publication. Without
+this evidence, the result is **BLOCKED**, not 100/100.
+
+This checker prints results to the console only; it does not create archives,
+approval records, or retrospective Sila governance history.

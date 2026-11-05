@@ -41,7 +41,20 @@ IGNORE_DIRS = {".git", "_site", "__pycache__", ".venv"}
 DENIED_IDENTITIES = tuple(bytes.fromhex(value).decode("ascii") for value in (
     "657468657265756d", "6574685f", "65766d", "6569702d",
     "6572632d", "657468657273", "65746865727363616e",
+    "69656970", "69657263", "61657263", "6977657468",
+    "657468726578", "736f6c6964697479", "7365706f6c6961",
+    "686f6c65736b79",
 ))
+# Separate whole-token denial protects common protocol acronyms while
+# avoiding incidental partial matches in ordinary words.
+DENIED_WORDS = tuple(bytes.fromhex(value).decode("ascii") for value in (
+    "657468", "6574686572", "656970", "657263", "65766d",
+    "77657468", "67657468", "72657468",
+))
+DENIED_WORD_PATTERN = re.compile(
+    r"(?<![a-z0-9])(?:" + "|".join(re.escape(word) for word in DENIED_WORDS)
+    + r")(?![a-z0-9])", flags=re.IGNORECASE
+)
 INLINE = re.compile(r"(\[[^\]\n]+\]\([^)]+\)|\*\*[^*\n]+\*\*|\x60[^\x60\n]+\x60)")
 LINKS = re.compile(r"\[[^\]\n]+\]\(([^)\s]+)\)")
 
@@ -181,10 +194,16 @@ def audit(root: Path = ROOT) -> int:
     checked = 0
     findings: list[str] = []
     for path in root.rglob("*"):
-        if not path.is_file() or set(path.relative_to(root).parts) & IGNORE_DIRS:
-            continue
         relative = str(path.relative_to(root))
-        if any(marker in relative.lower() for marker in DENIED_IDENTITIES):
+        if set(path.relative_to(root).parts) & IGNORE_DIRS:
+            continue
+        if path.is_symlink():
+            findings.append(f"{relative}: symbolic link is not an approved Sila source")
+            continue
+        if not path.is_file():
+            continue
+        if (any(marker in relative.lower() for marker in DENIED_IDENTITIES)
+                or DENIED_WORD_PATTERN.search(relative)):
             findings.append(f"{relative}: disallowed identity in path")
         if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -194,10 +213,9 @@ def audit(root: Path = ROOT) -> int:
         except UnicodeError:
             findings.append(f"{relative}: non-text content in a textual file")
             continue
-        for marker in DENIED_IDENTITIES:
-            if marker in content:
-                findings.append(f"{relative}: disallowed identity marker")
-                break
+        if (any(marker in content for marker in DENIED_IDENTITIES)
+                or DENIED_WORD_PATTERN.search(content)):
+            findings.append(f"{relative}: disallowed identity marker")
     for finding in findings[:30]:
         print("IDENTITY HOLD:", finding)
     print(f"Sila identity audit: {checked} text files; {len(findings)} findings")
