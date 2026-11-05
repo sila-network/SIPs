@@ -17,6 +17,23 @@ class SilaGovernanceContractTests(unittest.TestCase):
         cls.template = (ROOT / "sip-template.md").read_text(encoding="utf-8")
         cls.settings = tomllib.loads((ROOT / "config" / "sila.toml").read_text(encoding="utf-8"))
 
+    def test_final_decision_owner_is_ahmed_only(self) -> None:
+        governance = self.settings["governance"]
+        self.assertEqual(governance["final_decision_owner"], "Ahmed Ibrahim")
+        self.assertEqual(governance["final_decision_github_login"], "sila-chain")
+        self.assertIs(governance["final_decision_exclusive"], True)
+        self.assertIs(governance["independent_technical_review_required"], True)
+
+    def test_sip1_does_not_delegate_owner_signoff_to_reviewers(self) -> None:
+        self.assertIn("Ahmed Ibrahim alone", self.body)
+        self.assertIn("MUST NOT replace the final decision by Ahmed Ibrahim", self.body)
+        self.assertIn("MUST NOT be treated as its own independent reviewer", self.body)
+
+    def test_authority_does_not_make_the_draft_final(self) -> None:
+        self.assertEqual(self.metadata["status"], "Draft")
+        self.assertNotIn("approval-ref", self.metadata)
+        self.assertIn("This designation does not approve SIP-1", self.body)
+
     def test_foundation_is_draft_not_approved(self) -> None:
         self.assertEqual(self.metadata["sip"], "1")
         self.assertEqual(self.metadata["status"], "Draft")

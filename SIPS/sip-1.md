@@ -42,7 +42,9 @@ A SIP MUST describe only Sila protocol, governance, and application identities a
 - **Editor:** An editor authorized by Sila Network checks document structure, numbering, completeness, valid references, and state-transition evidence. The role describes a function; this document does not claim that appointments have already occurred.
 - **Technical reviewer:** A reviewer assesses normative behavior, testability, implementation feasibility, and risk. A Standards Track proposal SHOULD receive review independent of the document's authors.
 - **Implementer:** An implementer provides code and test evidence for the affected Sila components. Implementation evidence does not grant governance approval.
-- **Decision authority:** Only an explicitly authorized Sila governance decision may grant a binding Final or approved Living status. If the current procedure has not designated a decision authority, adoption remains blocked.
+- **Final decision authority:** Ahmed Ibrahim alone has the Sila project owner's final authority to approve or reject changes across Sila-owned repositories. The GitHub account designated for his decisions in this repository is `sila-chain`. This designation does not approve SIP-1 or any other proposal, nor does it by itself make a repository change effective.
+- **Independent technical reviewer:** An authorized reviewer independent of the change author MUST complete the required technical review before any merge. That reviewer MAY recommend approval or rejection but MUST NOT replace the final decision by Ahmed Ibrahim. In particular, when `sila-chain` authors a change, that account MUST NOT be treated as its own independent reviewer.
+- **Decision evidence:** A final owner decision MUST identify the actual Sila change and its exact revision. A test result, an author's signature, a reviewer recommendation, a saved preference, or a successful build MUST NOT be mistaken for an owner approval. GitHub branch rules and access controls MUST enforce the applicable requirements before integration.
 
 No bot or automated test has the authority to approve a specification, invent a human sign-off, or activate a network change. Reviewers and editors MUST disclose a material conflict of interest and seek independent review when appropriate.
 
@@ -155,7 +157,7 @@ Reviewers must check meaning, compatibility with genuine Sila components, implem
 
 Last Call SHOULD remain open for at least fourteen full calendar days after a complete candidate and real public review location are available. An editor MUST set a genuine deadline before starting Last Call, and unresolved normative changes MUST restart review. There is no automatic promotion when the deadline expires.
 
-The final decision authority and its approval procedure MUST be legitimately designated by Sila Network before any proposal can enter Final or approved Living. This document does not invent a voting quorum, an earlier consensus, or a meeting that has not happened.
+Ahmed Ibrahim is designated as the exclusive final decision owner for Sila-owned repository changes, with `sila-chain` as his GitHub account in this repository. Independent technical review remains mandatory before merging. A real owner decision bound to the exact source revision, a completed independent review, and verifiable governance evidence are still required before Final or approved Living may be granted. This document does not invent a voting quorum, an earlier consensus, or a meeting that has not happened. This draft does not claim that automated enforcement has been configured for every future Sila repository.
 
 ### Adoption and activation are separate
 

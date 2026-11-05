@@ -151,3 +151,22 @@ this evidence, the result is **BLOCKED**, not 100/100.
 
 This checker prints results to the console only; it does not create archives,
 approval records, or retrospective Sila governance history.
+
+## Sila final decision and review responsibility
+
+Ahmed Ibrahim is the exclusive final decision owner for approving or rejecting
+changes in Sila-owned repositories. His designated GitHub account for this
+repository is `sila-chain`. Jihad Mustafa remains a founding author, not a
+second final decision owner.
+
+Final owner authorization is different from independent technical review:
+a qualified, explicitly appointed reviewer other than the change author
+must approve changes requiring that review. No fake reviewer accounts,
+automatic approvals, delegated final authority, or self-reviews are permitted.
+
+SIP-1 remains a Draft. The owner designation is not a decision to approve
+SIP-1, merge PR #1, publish the website, or activate protocol changes.
+The repository's technical gates do not yet prove a final owner sign-off,
+and this rule must be implemented and verified separately wherever other
+Sila repositories exist. The GitHub permissions of those repositories are
+not changed by editing this repository.
