@@ -1,0 +1,16 @@
+[sila]
+name = "Sila"
+issuer = "Sila Network"
+document_prefix = "SIP"
+repository = "sila-network/SIPs"
+site_title = "Sila Protocol Specifications"
+
+[governance]
+authorized_authors = ["Ahmed Ibrahim", "Jihad Mustafa"]
+statuses = ["Idea", "Draft", "Review", "Last Call", "Final", "Stagnant", "Withdrawn", "Living"]
+types = ["Standards Track", "Meta", "Informational"]
+categories = ["Core", "Networking", "Interface", "SRC"]
+required_sections = ["Abstract", "Specification", "Rationale", "Security Considerations", "Copyright"]
+
+[references]
+allowed_web_hosts = ["sila-magicians.discourse.group", "github.com", "www.rfc-editor.org", "www.w3.org", "www.unicode.org", "spec.whatwg.org"]

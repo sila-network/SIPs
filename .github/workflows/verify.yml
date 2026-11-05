@@ -1,0 +1,30 @@
+name: Sila Native Verification
+
+on:
+  push:
+    branches:
+      - "sila/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Sila source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify Python runtime
+        run: python3 --version
+      - name: Test native Sila implementation
+        run: python3 -m unittest discover -s tests -v
+      - name: Audit Sila-only identity
+        run: python3 tools/sila.py audit
+      - name: Validate Sila proposals
+        run: python3 tools/sila.py check
+      - name: Build local Sila preview
+        run: python3 tools/sila.py build --output _site
+      - name: Validate generated pages
+        run: python3 tools/sila.py verify-site --output _site
