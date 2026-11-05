@@ -151,6 +151,34 @@ class ChangeClassificationTests(unittest.TestCase):
         self.assertTrue(policy_changed)
         self.assertIn("technical", roles)
 
+    def test_initial_policy_creation_does_not_bypass_independent_review(self):
+        roles, blocked, _ = classify_changes([
+            changed("config/sila-review.toml", "added")
+        ], self.p)
+        self.assertFalse(blocked)
+        self.assertEqual(roles, {"technical"})
+
+    def test_existing_policy_update_still_blocked(self):
+        _, blocked, _ = classify_changes([
+            changed("config/sila-review.toml", "modified")
+        ], self.p)
+        self.assertTrue(blocked)
+
+    def test_existing_policy_deletion_still_blocked(self):
+        _, blocked, _ = classify_changes([
+            changed("config/sila-review.toml", "removed")
+        ], self.p)
+        self.assertTrue(blocked)
+
+    def test_new_policy_roster_without_authorized_reviewers_remains_blocked(self):
+        with patch("tools.sila_review.github_pages", side_effect=[
+            [changed("config/sila-review.toml", "added")],
+            [],
+        ]):
+            passed, messages = evaluate_pr(event(), load_policy(), "token")
+        self.assertFalse(passed)
+        self.assertIn("technical", messages[0])
+
     def test_unsafe_traversal_path_rejected(self):
         for name in ("/etc/secrets", "../outside", "a/../c", "a\\b", ""):
             with self.subTest(name=name), self.assertRaises(ReviewError):

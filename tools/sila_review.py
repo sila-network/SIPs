@@ -178,7 +178,11 @@ def classify_changes(changes: list[dict], policy: dict) -> tuple[set[str], bool,
         for original in candidates:
             path = canonical_path(original)
             paths.add(path)
-            if path == POLICY_FILE.as_posix():
+            if path == POLICY_FILE.as_posix() and change.get("status") != "added":
+                # The first repository bootstrap introduces this file.
+                # An existing roster may not rewrite its own authority.
+                # Bootstrap still requires independently authorized reviewers
+                # and the explicit final decision of Ahmed Ibrahim.
                 protected_policy = True
             requested.add("technical")
             if path.startswith("SIPS/") or path == "sip-template.md":
