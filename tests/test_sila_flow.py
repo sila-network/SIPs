@@ -160,7 +160,12 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
                sha: str = REVISION, status: str = "APPROVED", author: str = "sila-chain",
                changed_path: str = "SIPS/sip-2.md") -> tuple[bool, list[str]]:
         files = [{"filename": changed_path, "status": "added"}]
-        responses = [files, [mock_approval(reviewer, sha, state=status)]]
+        responses = [files, [mock_approval(reviewer, sha, state=status)], [
+            {"id": 901, "user": {"login": "sila-chain"},
+             "body": f"SILA FINAL APPROVE {REVISION}",
+             "created_at": "2026-11-05T12:02:00Z",
+             "updated_at": "2026-11-05T12:02:00Z"}
+        ]]
         with patch("tools.sila_review.github_pages", side_effect=responses):
             return evaluate_pr(mock_event(author), self.policy(authorized=authorized, dual_role=True), "fixture-only")
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -13,6 +13,9 @@ from tools.sila_review import (
     canonical_path,
     classify_changes,
     evaluate_pr,
+    final_owner_decision,
+    load_final_owner,
+    github_time,
     load_policy,
     require_reviews,
     urlopen,
@@ -31,6 +34,13 @@ def review(login="verified-reviewer", state="APPROVED", sha=HEAD, ident=1):
         "commit_id": sha,
         "submitted_at": f"2026-11-05T12:00:{ident % 60:02d}Z",
     }
+
+
+def owner_comment(decision="APPROVE", sha=HEAD, login="sila-chain", ident=200,
+                  created="2026-11-05T12:01:00Z", updated=None):
+    return {"id": ident, "user": {"login": login}, 
+            "body": f"SILA FINAL {decision} {sha}",
+            "created_at": created, "updated_at": updated or created}
 
 
 def changed(path, status="modified", previous=None):
@@ -125,7 +135,7 @@ class ChangeClassificationTests(unittest.TestCase):
 
     def test_readme_requires_editor(self):
         roles, _, _ = classify_changes([changed("README.md")], self.p)
-        self.assertEqual(roles, {"editor"})
+        self.assertEqual(roles, {"editor", "technical"})
 
     def test_rename_covers_earlier_path(self):
         roles, _, paths = classify_changes([
@@ -268,6 +278,7 @@ class GithubEventTests(unittest.TestCase):
         with patch("tools.sila_review.github_pages", side_effect=[
             [changed("SIPS/sip-1.md")],
             [review("Sila-editor", ident=1), review("Sila-reviewer", ident=2)],
+            [owner_comment()],
         ]):
             passed, reasons = evaluate_pr(event(), with_reviewers(), "token")
         self.assertTrue(passed)
@@ -282,6 +293,104 @@ class GithubEventTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertIn("technical", reasons[0])
 
+
+
+class OwnerDecisionTests(unittest.TestCase):
+    def test_founder_is_exactly_configured(self):
+        self.assertEqual(load_final_owner(), "sila-chain")
+
+    def test_timestamp_needs_explicit_timezone(self):
+        with self.assertRaises(ReviewError):
+            github_time("2026-11-05T12:00:00")
+
+    def test_no_owner_approval_blocks(self):
+        passed, reasons = final_owner_decision([], HEAD, github_time("2026-11-05T12:00:03Z"))
+        self.assertFalse(passed)
+        self.assertIn("Ahmed Ibrahim", reasons[0])
+
+    def test_authenticated_final_owner_decision_passes_after_review(self):
+        passed, reasons = final_owner_decision([owner_comment()], HEAD, github_time("2026-11-05T12:00:03Z"))
+        self.assertTrue(passed)
+        self.assertEqual(reasons, [])
+
+    def test_pr_author_is_not_permitted_as_technical_reviewer(self):
+        self.assertEqual(approved_reviewers([review(login="sila-chain")], HEAD, "sila-chain"), set())
+
+    def test_other_account_cannot_decide_for_ahmed(self):
+        passed, _ = final_owner_decision(
+            [owner_comment(login="not-owner")], HEAD, github_time("2026-11-05T12:00:03Z"))
+        self.assertFalse(passed)
+
+    def test_old_owner_approval_does_not_apply_to_new_revision(self):
+        passed, _ = final_owner_decision([owner_comment(sha=OLD)], HEAD,
+                                         github_time("2026-11-05T12:00:03Z"))
+        self.assertFalse(passed)
+
+    def test_owner_approval_before_independent_review_does_not_count(self):
+        passed, reasons = final_owner_decision(
+            [owner_comment()], HEAD, github_time("2026-11-05T12:02:00Z"))
+        self.assertFalse(passed)
+        self.assertIn("after", reasons[0])
+
+    def test_owner_rejection_overrides_old_approval(self):
+        passed, reasons = final_owner_decision([
+            owner_comment(), owner_comment(decision="REJECT", ident=201,
+                created="2026-11-05T12:02:00Z")], HEAD,
+            github_time("2026-11-05T12:00:03Z"))
+        self.assertFalse(passed)
+        self.assertIn("not an approval", reasons[0])
+
+    def test_owner_revocation_overrides_old_approval(self):
+        passed, reasons = final_owner_decision([
+            owner_comment(), owner_comment(decision="REVOKE", ident=201,
+                created="2026-11-05T12:02:00Z")], HEAD,
+            github_time("2026-11-05T12:00:03Z"))
+        self.assertFalse(passed)
+        self.assertIn("not an approval", reasons[0])
+
+    def test_edited_owner_comment_is_rejected(self):
+        with self.assertRaisesRegex(ReviewError, "edited Sila final decision"):
+            final_owner_decision([
+                owner_comment(updated="2026-11-05T12:03:00Z")], HEAD,
+                github_time("2026-11-05T12:00:03Z"))
+
+    def test_stray_text_is_not_final_owner_approval(self):
+        passed, _ = final_owner_decision([
+            {**owner_comment(), "body": "Looks good to me"}], HEAD,
+            github_time("2026-11-05T12:00:03Z"))
+        self.assertFalse(passed)
+
+    def test_wrong_owner_account_is_rejected(self):
+        with self.assertRaises(ReviewError):
+            final_owner_decision([owner_comment()], HEAD, github_time("2026-11-05T12:00:03Z"), "other")
+
+    def test_no_independent_review_never_reaches_owner_step(self):
+        with patch("tools.sila_review.github_pages", side_effect=[
+            [changed("SIPS/sip-1.md")], []
+        ]):
+            passed, reasons = evaluate_pr(event(), with_reviewers(), "token")
+        self.assertFalse(passed)
+        self.assertEqual(len(reasons), 2)
+
+    def test_independent_review_without_ahmed_signoff_blocks(self):
+        with patch("tools.sila_review.github_pages", side_effect=[
+            [changed("SIPS/sip-1.md")],
+            [review("Sila-editor", ident=1), review("Sila-reviewer", ident=2)],
+            [],
+        ]):
+            passed, reasons = evaluate_pr(event(), with_reviewers(), "token")
+        self.assertFalse(passed)
+        self.assertIn("Ahmed Ibrahim", reasons[0])
+
+    def test_ahmed_signoff_with_independent_technical_review_passes(self):
+        with patch("tools.sila_review.github_pages", side_effect=[
+            [changed("SIPS/sip-1.md")],
+            [review("Sila-editor", ident=1), review("Sila-reviewer", ident=2)],
+            [owner_comment()],
+        ]):
+            passed, reasons = evaluate_pr(event(), with_reviewers(), "token")
+        self.assertTrue(passed)
+        self.assertEqual(reasons, [])
 
 if __name__ == "__main__":
     unittest.main()

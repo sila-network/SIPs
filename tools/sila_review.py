@@ -9,6 +9,7 @@ authorized Sila reviewer roster. Unassigned roles block the applicable PR.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,9 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_FILE = Path("config/sila-review.toml")
+GOVERNANCE_FILE = Path("config/sila.toml")
+FINAL_OWNER = "Ahmed Ibrahim"
+FINAL_LOGIN = "sila-chain"
 GITHUB_HOST = "https://api.github.com"
 ROLES = frozenset(("editor", "technical"))
 LOGIN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
@@ -61,6 +65,90 @@ def load_policy(path: Path = ROOT / POLICY_FILE) -> dict:
     return policy
 
 
+def load_final_owner(path: Path = ROOT / GOVERNANCE_FILE) -> str:
+    """Verify that the Sila governance config matches the fixed owner identity."""
+    with path.open("rb") as stream:
+        governance = tomllib.load(stream).get("governance", {})
+    if (not isinstance(governance, dict)
+            or governance.get("final_decision_owner") != FINAL_OWNER
+            or governance.get("final_decision_github_login") != FINAL_LOGIN
+            or governance.get("final_decision_exclusive") is not True
+            or governance.get("independent_technical_review_required") is not True):
+        raise ReviewError("Sila founder decision authority was changed or is unverified")
+    return FINAL_LOGIN
+
+
+def github_time(value: object) -> datetime:
+    """Parse an authenticated GitHub timestamp without assuming the local timezone."""
+    if not isinstance(value, str) or not value:
+        raise ReviewError("missing verifiable GitHub decision timestamp")
+    try:
+        timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ReviewError("invalid GitHub decision timestamp") from error
+    if timestamp.utcoffset() is None:
+        raise ReviewError("unqualified GitHub decision timezone")
+    return timestamp
+
+
+def independent_review_time(reviews: list[dict], approved: set[str], sha: str) -> datetime:
+    """Find the latest authorized independent approval for the exact head."""
+    timestamps = [
+        github_time(review.get("submitted_at"))
+        for review in reviews
+        if (isinstance(review.get("user"), dict)
+            and str(review["user"].get("login", "")).casefold() in approved
+            and review.get("state") == "APPROVED"
+            and review.get("commit_id") == sha)
+    ]
+    if not timestamps:
+        raise ReviewError("missing dated independent Sila review")
+    return max(timestamps)
+
+
+def final_owner_decision(
+    comments: list[dict], sha: str, approved_after: datetime, login: str = FINAL_LOGIN
+) -> tuple[bool, list[str]]:
+    """Require an authenticated PR comment from Ahmed after independent review.
+
+    A PR comment is not a GitHub review, and the PR author may not review
+    themselves. The owner explicitly signs off separately on this exact SHA.
+    """
+    if not isinstance(comments, list) or any(not isinstance(c, dict) for c in comments):
+        raise ReviewError("invalid GitHub Sila decision comment listing")
+    if not HEX_SHA.fullmatch(sha) or login != FINAL_LOGIN:
+        raise ReviewError("invalid Sila final decision authority or revision")
+    decisions = []
+    for comment in comments:
+        actor = comment.get("user")
+        if not isinstance(actor, dict) or not isinstance(actor.get("login"), str):
+            raise ReviewError("unverifiable Sila PR comment actor")
+        if actor["login"].casefold() != login.casefold():
+            continue
+        body = comment.get("body")
+        if not isinstance(body, str):
+            raise ReviewError("unverifiable Sila owner comment")
+        match = re.fullmatch(r"SILA FINAL (APPROVE|REJECT|REVOKE) ([a-fA-F0-9]{40})", body)
+        if not match or match.group(2).lower() != sha.lower():
+            continue
+        created = github_time(comment.get("created_at"))
+        updated = github_time(comment.get("updated_at"))
+        if updated != created:
+            raise ReviewError("edited Sila final decision cannot serve as authenticated approval")
+        comment_id = comment.get("id")
+        if not isinstance(comment_id, int) or isinstance(comment_id, bool) or comment_id < 1:
+            raise ReviewError("Sila final decision has no verified GitHub identifier")
+        decisions.append((created, comment_id, match.group(1)))
+    if not decisions:
+        return False, ["Ahmed Ibrahim has not approved this exact Sila revision"]
+    timestamp, _, decision = max(decisions, key=lambda c: (c[0], c[1]))
+    if decision != "APPROVE":
+        return False, ["the latest Ahmed Ibrahim decision is not an approval"]
+    if timestamp <= approved_after:
+        return False, ["Ahmed Ibrahim must approve after the independent Sila reviewer"]
+    return True, []
+
+
 def canonical_path(raw: str) -> str:
     if not isinstance(raw, str) or not raw or raw.startswith("/") or "\\" in raw:
         raise ReviewError("invalid proposed file path")
@@ -92,6 +180,7 @@ def classify_changes(changes: list[dict], policy: dict) -> tuple[set[str], bool,
             paths.add(path)
             if path == POLICY_FILE.as_posix():
                 protected_policy = True
+            requested.add("technical")
             if path.startswith("SIPS/") or path == "sip-template.md":
                 requested.update(policy["review"]["spec_roles"])
             elif path.startswith(("tools/", "tests/", ".github/")) or path.startswith("config/"):
@@ -149,12 +238,15 @@ def require_reviews(
 def github_pages(repo: str, number: int, endpoint: str, token: str) -> list[dict]:
     if repo != "sila-network/SIPs" or not isinstance(number, int) or number < 1:
         raise ReviewError("invalid Sila pull-request target")
-    if endpoint not in ("files", "reviews") or not token:
+    if endpoint not in ("files", "reviews", "comments") or not token:
         raise ReviewError("unsupported review source or missing read token")
     output: list[dict] = []
     # A truncated listing would create a bypass. Always fail closed.
     for page in range(1, 51):
-        url = f"{GITHUB_HOST}/repos/{repo}/pulls/{number}/{endpoint}?per_page=100&page={page}"
+        if endpoint == "comments":
+            url = f"{GITHUB_HOST}/repos/{repo}/issues/{number}/comments?per_page=100&page={page}"
+        else:
+            url = f"{GITHUB_HOST}/repos/{repo}/pulls/{number}/{endpoint}?per_page=100&page={page}"
         request = Request(url, headers={
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
@@ -202,7 +294,14 @@ def evaluate_pr(event: dict, policy: dict, token: str) -> tuple[bool, list[str]]
         return False, ["reviewer policy cannot authorize itself in the same pull request"]
     reviews = github_pages(target, number, "reviews", token)
     approved = approved_reviewers(reviews, sha, pr_author)
-    return require_reviews(policy, roles, approved)
+    passed, reasons = require_reviews(policy, roles, approved)
+    if not passed:
+        return passed, reasons
+    login = load_final_owner()
+    technical = {name.casefold() for name in policy["reviewers"]["technical"]}
+    reviewed_at = independent_review_time(reviews, approved & technical, sha)
+    comments = github_pages(target, number, "comments", token)
+    return final_owner_decision(comments, sha, reviewed_at, login)
 
 
 def main() -> int:
@@ -212,6 +311,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         policy = load_policy()
+        load_final_owner()
         if args.command == "policy":
             print("PASS: Sila reviewer policy schema is valid; no governance appointment inferred")
             return 0
@@ -224,7 +324,7 @@ def main() -> int:
             for blocker in blockers:
                 print("REVIEW BLOCKED:", blocker, file=sys.stderr)
             return 2
-        print("PASS: mandatory independent Sila reviews verified for current PR head")
+        print("PASS: independent Sila reviews and Ahmed Ibrahim final approval verified for current PR head")
         return 0
     except (ReviewError, OSError, ValueError, TypeError, KeyError) as error:
         print("REVIEW BLOCKED:", error, file=sys.stderr)

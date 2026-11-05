@@ -170,3 +170,31 @@ The repository's technical gates do not yet prove a final owner sign-off,
 and this rule must be implemented and verified separately wherever other
 Sila repositories exist. The GitHub permissions of those repositories are
 not changed by editing this repository.
+
+## Final approval of Sila changes
+
+Ahmed Ibrahim is the **exclusive final decision authority**. His designated
+GitHub identity is `sila-chain`. The independent technical reviewer
+must be a real, explicitly authorized GitHub account other than the change
+author. A technical recommendation alone never grants final authorization.
+
+After the independent approval of the exact current commit, Ahmed may
+personally add one of these exact comments to the **same GitHub pull request**:
+
+```text
+SILA FINAL APPROVE <40-character-head-commit-sha>
+SILA FINAL REJECT <40-character-head-commit-sha>
+SILA FINAL REVOKE <40-character-head-commit-sha>
+```
+
+Only a new, unedited comment authenticated as `sila-chain` and
+created **after** the independent review qualifies as owner approval.
+The check rejects outdated revisions, an altered decision comment, missing
+reviewer approvals, revocations, and a newer rejection. Do not ask any
+automation to write the final decision on Ahmed's behalf.
+
+This adds a **technical PR gate for this SIP repository**. It does not
+grant an approval for SIP-1, bypass GitHub branch protection, or authorize
+a merge or release. The real reviewer roster still needs independent
+appointment. This repository gate is not automatically installed in
+other Sila repositories; each repository must be assessed separately.
