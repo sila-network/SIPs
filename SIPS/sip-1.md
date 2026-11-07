@@ -104,6 +104,12 @@ Passing a URL format check does not verify that the remote resource exists.
 
 The Sila proposal title and description MUST be concise, without colon separators. In a Standards Track proposal, an explicit SIP reference within the Specification denotes a normative dependency and MUST appear in the `requires` metadata. Inline code examples do not create normative references.
 
+The first prose citation of a different Sila proposal MUST link to that
+proposal's actual numbered Sila source. A cited Sila proposal MUST be at
+least as mature as the citing proposal. A Withdrawn proposal is not a
+valid normative dependency or stable reference; illustrative inline
+code does not count as an actual citation.
+
 A metadata key MUST NOT be populated merely to satisfy a validator. A false author, date, discussion link, approval, or implementation reference is a substantive governance error. Dates in example templates are placeholders, never events. Fields not relevant to a proposal SHOULD be absent instead of carrying fictitious values.
 
 ### Document sections and submission contract

@@ -416,8 +416,16 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
                 reject(path, f"Sila normative dependency SIP-{required} has insufficient status")
         reference_text = "\n".join(strip_inline_code(line) for line in visible.splitlines())
         for referenced in REFERENCE.findall(reference_text):
-            if int(referenced) not in found:
+            target = int(referenced)
+            if target not in found:
                 reject(path, f"unknown Sila cross-reference SIP-{referenced}")
+            if target == number:
+                continue
+            referenced_status = found[target][1]["status"]
+            if referenced_status == "Withdrawn":
+                reject(path, f"withdrawn Sila cross-reference SIP-{target}")
+            if STATUS_MATURITY[referenced_status] < STATUS_MATURITY[meta["status"]]:
+                reject(path, f"Sila cross-reference SIP-{target} has insufficient status")
         check_first_sila_reference(path, visible, number)
         if meta["type"] == "Standards Track":
             match = re.search(

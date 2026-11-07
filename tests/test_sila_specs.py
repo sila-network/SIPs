@@ -536,6 +536,30 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=BODY + "\nSee [SIP-1](sip-1.md#missing-section).\n")
         self.fails("unresolved heading anchor")
 
+    def test_review_cannot_cite_draft_as_stable_authority(self):
+        self.create(status="Review", body=BODY +
+                    "\nSee [SIP-1](sip-1.md#rationale) for background.\n")
+        self.fails("cross-reference SIP-1 has insufficient status")
+
+    def test_draft_can_cite_draft(self):
+        self.create()
+        self.create(num=3, body=BODY + "\nSee [SIP-2](sip-2.md).\n")
+        self.assertEqual(len(validate_repository(self.root)), 3)
+
+    def test_draft_cannot_cite_idea_as_mature(self):
+        self.create(status="Idea")
+        self.create(num=3, body=BODY + "\nSee [SIP-2](sip-2.md).\n")
+        self.fails("cross-reference SIP-2 has insufficient status")
+
+    def test_withdrawn_cross_reference_rejected(self):
+        self.create(status="Withdrawn", **{"withdrawal-reason": "Test-only candidate withdrawn."})
+        self.create(num=3, body=BODY + "\nSee [SIP-2](sip-2.md).\n")
+        self.fails("withdrawn Sila cross-reference SIP-2")
+
+    def test_own_sila_proposal_can_describe_its_number(self):
+        self.create(body=BODY + "\nThis SIP-2 is only a test candidate.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 
