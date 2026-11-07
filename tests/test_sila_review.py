@@ -71,14 +71,8 @@ def with_reviewers():
 
 
 class PolicyTests(unittest.TestCase):
-    def test_real_sila_review_appointment_is_explicit_and_not_a_decision(self):
-        roster = load_policy()["reviewers"]
-        self.assertEqual(roster, {
-            "editor": ["ahmed202225"],
-            "technical": ["ahmed202225"],
-        })
-        self.assertNotIn("sila-chain", roster["editor"])
-        self.assertNotIn("sila-chain", roster["technical"])
+    def test_clean_roster_is_valid_without_inventing_reviewers(self):
+        self.assertEqual(load_policy()["reviewers"], {"editor": [], "technical": []})
 
     def test_existing_policy_never_assumes_governance_role(self):
         p = load_policy()
@@ -181,9 +175,7 @@ class ChangeClassificationTests(unittest.TestCase):
             [changed("config/sila-review.toml", "added")],
             [],
         ]):
-            empty = deepcopy(load_policy())
-            empty["reviewers"] = {"editor": [], "technical": []}
-            passed, messages = evaluate_pr(event(), empty, "token")
+            passed, messages = evaluate_pr(event(), load_policy(), "token")
         self.assertFalse(passed)
         self.assertIn("technical", messages[0])
 
@@ -232,9 +224,7 @@ class ReviewDecisionTests(unittest.TestCase):
             approved_reviewers([review()], "not-a-commit", "contributor")
 
     def test_roster_without_appointments_blocks_all_roles(self):
-        empty = deepcopy(load_policy())
-        empty["reviewers"] = {"editor": [], "technical": []}
-        passed, reasons = require_reviews(empty, {"editor", "technical"}, {"someone"})
+        passed, reasons = require_reviews(load_policy(), {"editor", "technical"}, {"someone"})
         self.assertFalse(passed)
         self.assertEqual(len(reasons), 2)
 
@@ -299,9 +289,7 @@ class GithubEventTests(unittest.TestCase):
 
     def test_missing_roster_causes_blocked_pr(self):
         with patch("tools.sila_review.github_pages", side_effect=[[changed("SIPS/sip-1.md")], []]):
-            empty = deepcopy(load_policy())
-            empty["reviewers"] = {"editor": [], "technical": []}
-            passed, messages = evaluate_pr(event(), empty, "token")
+            passed, messages = evaluate_pr(event(), load_policy(), "token")
         self.assertFalse(passed)
         self.assertEqual(len(messages), 2)
 

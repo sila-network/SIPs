@@ -317,7 +317,7 @@ def main() -> int:
         policy = load_policy()
         load_final_owner()
         if args.command == "policy":
-            print("PASS: Sila reviewer policy schema is valid; appointments are not approvals")
+            print("PASS: Sila reviewer policy schema is valid; no governance appointment inferred")
             return 0
         if not args.event:
             raise ReviewError("missing trusted pull-request event file")
