@@ -32,12 +32,17 @@ def safe_ruleset() -> dict:
                 "required_approving_review_count": 1,
                 "dismiss_stale_reviews_on_push": True,
                 "required_review_thread_resolution": True,
+                "require_last_push_approval": True,
+                "allowed_merge_methods": ["squash"],
             }},
             {"type": "required_status_checks", "parameters": {
                 "strict_required_status_checks_policy": True,
+                "do_not_enforce_on_create": False,
                 "required_status_checks": [{"context": "native-checks"}],
             }},
             {"type": "required_linear_history"},
+            {"type": "deletion"},
+            {"type": "non_fast_forward"},
         ],
     }
 
@@ -114,6 +119,40 @@ class ClosureGateTests(unittest.TestCase):
         fixture = safe_ruleset()
         fixture["bypass_actors"] = [{"actor_id": 1, "actor_type": "User", "bypass_mode": "always"}]
         self.assertTrue(any("bypass" in x for x in assess_rulesets([fixture])))
+
+    def test_most_recent_push_needs_independent_approval(self):
+        fixture = safe_ruleset()
+        fixture["rules"][0]["parameters"]["require_last_push_approval"] = False
+        self.assertTrue(any("latest reviewable push" in x for x in assess_rulesets([fixture])))
+
+    def test_squash_only_merge_policy_is_enforced(self):
+        fixture = safe_ruleset()
+        fixture["rules"][0]["parameters"]["allowed_merge_methods"] = ["squash", "rebase"]
+        self.assertTrue(any("squash-only" in x for x in assess_rulesets([fixture])))
+
+    def test_required_checks_must_be_strict(self):
+        fixture = safe_ruleset()
+        fixture["rules"][1]["parameters"]["strict_required_status_checks_policy"] = False
+        self.assertTrue(any("latest main revision" in x for x in assess_rulesets([fixture])))
+
+    def test_required_checks_must_be_enforced_on_branch_creation(self):
+        fixture = safe_ruleset()
+        fixture["rules"][1]["parameters"]["do_not_enforce_on_create"] = True
+        self.assertTrue(any("branch is created" in x for x in assess_rulesets([fixture])))
+
+    def test_main_must_prevent_deletion(self):
+        fixture = safe_ruleset()
+        fixture["rules"] = [r for r in fixture["rules"] if r["type"] != "deletion"]
+        self.assertTrue(any("deletions" in x for x in assess_rulesets([fixture])))
+
+    def test_main_must_prevent_force_pushes(self):
+        fixture = safe_ruleset()
+        fixture["rules"] = [r for r in fixture["rules"] if r["type"] != "non_fast_forward"]
+        self.assertTrue(any("force pushes" in x for x in assess_rulesets([fixture])))
+
+    def test_verified_sila_founder_controls_final_decision_identity(self):
+        from tools.sila_review import load_final_owner
+        self.assertEqual(load_final_owner(), "sila-chain")
 
     def test_valid_simulated_ruleset_passes_preconditions_only(self):
         self.assertEqual(assess_rulesets([safe_ruleset()]), [])

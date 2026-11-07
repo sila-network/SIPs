@@ -16,9 +16,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 if __package__:
-    from .sila_review import load_policy, ReviewError
+    from .sila_review import load_policy, load_final_owner, ReviewError
 else:
-    from sila_review import load_policy, ReviewError
+    from sila_review import load_policy, load_final_owner, ReviewError
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "sila-network/SIPs"
@@ -67,6 +67,12 @@ def assess_rulesets(entries: list[dict]) -> list[str]:
     thread_resolution = False
     linear_history = False
     bypasses = False
+    strict_checks = False
+    creation_enforced = False
+    most_recent_push_approved = False
+    squash_only = False
+    block_deletions = False
+    block_force_pushes = False
     for entry in matched:
         if entry.get("bypass_actors"):
             bypasses = True
@@ -77,6 +83,9 @@ def assess_rulesets(entries: list[dict]) -> list[str]:
                 for required in params.get("required_status_checks", []):
                     if isinstance(required, dict) and isinstance(required.get("context"), str):
                         contexts.add(required["context"])
+                        if required["context"] == EXPECTED_CHECK:
+                            strict_checks = strict_checks or params.get("strict_required_status_checks_policy") is True
+                            creation_enforced = creation_enforced or params.get("do_not_enforce_on_create") is False
             elif kind == "pull_request":
                 count = params.get("required_approving_review_count", 0)
                 if not isinstance(count, int) or isinstance(count, bool) or count < 0:
@@ -84,19 +93,37 @@ def assess_rulesets(entries: list[dict]) -> list[str]:
                 approval_numbers.append(count)
                 stale_dismissal = stale_dismissal or params.get("dismiss_stale_reviews_on_push") is True
                 thread_resolution = thread_resolution or params.get("required_review_thread_resolution") is True
+                most_recent_push_approved = most_recent_push_approved or params.get("require_last_push_approval") is True
+                squash_only = squash_only or params.get("allowed_merge_methods") == ["squash"]
             elif kind == "required_linear_history":
                 linear_history = True
+            elif kind == "deletion":
+                block_deletions = True
+            elif kind == "non_fast_forward":
+                block_force_pushes = True
     problems = []
     if EXPECTED_CHECK not in contexts:
         problems.append(f"GitHub main does not require the {EXPECTED_CHECK} check")
+    if not strict_checks:
+        problems.append("Sila required checks must cover the latest main revision")
+    if not creation_enforced:
+        problems.append("Sila required checks may be bypassed when a branch is created")
     if not approval_numbers or max(approval_numbers) < 1:
         problems.append("GitHub main requires zero verified human approvals")
     if not stale_dismissal:
         problems.append("GitHub main does not dismiss stale reviews on new commits")
     if not thread_resolution:
         problems.append("GitHub main does not require review threads to be resolved")
+    if not most_recent_push_approved:
+        problems.append("GitHub main does not require approval of the latest reviewable push")
+    if not squash_only:
+        problems.append("GitHub main does not restrict merges to Sila squash-only policy")
     if not linear_history:
         problems.append("GitHub main does not require linear commit history")
+    if not block_deletions:
+        problems.append("GitHub main does not block protected branch deletions")
+    if not block_force_pushes:
+        problems.append("GitHub main does not block protected branch force pushes")
     if bypasses:
         problems.append("GitHub main has an unverified bypass actor")
     return problems
@@ -139,6 +166,9 @@ def main() -> int:
     args = parser.parse_args()
     try:
         policy = load_policy()
+        # A functioning review roster alone cannot replace Ahmed's final authority.
+        if load_final_owner() != CURRENT_OPERATOR:
+            raise ClosureError("Sila final decision account is not the approved founder")
         problems = assess_reviewer_roster(policy)
         problems.extend(assess_rulesets(live_rulesets(os.getenv("GITHUB_TOKEN", ""))))
         if problems:
