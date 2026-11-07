@@ -78,8 +78,8 @@ An editor MUST reject duplicate numbers, conflicting filenames, misleading title
 Every numbered SIP MUST start with a single flat metadata block between `---` delimiters. The required fields are:
 
 - `sip`: the assigned positive integer matching the file name.
-- `title`: an accurate, concise Sila-native document name.
-- `description`: a short sentence summarizing the proposal.
+- `title`: an accurate, concise Sila-native document name, at most 44 characters, without repeating its SIP number.
+- `description`: a short sentence summarizing the proposal, at most 140 characters.
 - `author`: the real, Sila-authorized named author or authors.
 - `status`: one of the defined Sila process states.
 - `type`: Standards Track, Meta, or Informational.
@@ -94,6 +94,13 @@ The additional fields have strict meanings:
 - `withdrawal-reason` is mandatory for Withdrawn.
 - `approval-ref` identifies an immutable, verifiable Sila decision record and is mandatory for Final and approved Living.
 - `implementation-ref` may identify a pinned Sila source revision or conformance record; a link alone is not proof that all technical tests passed.
+
+Metadata keys MUST appear in the published Sila front-matter order. A reference to
+a Sila implementation MUST identify a specific immutable source revision,
+not a mutable development branch or an unverified repository home page.
+An external independent technical standard MAY be linked only by a
+versioned reference permitted by Sila's original validator rules.
+Passing a URL format check does not verify that the remote resource exists.
 
 A metadata key MUST NOT be populated merely to satisfy a validator. A false author, date, discussion link, approval, or implementation reference is a substantive governance error. Dates in example templates are placeholders, never events. Fields not relevant to a proposal SHOULD be absent instead of carrying fictitious values.
 

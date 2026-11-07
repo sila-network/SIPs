@@ -93,8 +93,40 @@ def allowed_url(url: str, settings: dict, *, discussion: bool = False) -> bool:
         return False
     if obj.hostname not in settings["references"]["allowed_web_hosts"]:
         return False
-    if obj.hostname == "github.com" and not obj.path.startswith("/sila-network/"):
-        return False
+    # All URL authority checks are syntax checks, not proof of live sources.
+    if obj.hostname == "github.com":
+        # Encoded and relative path components can escape the apparent
+        # organizational namespace in a browser or an HTTP client.
+        if "%" in obj.path:
+            return False
+        parts = obj.path.split("/")
+        if any(part in (".", "..") for part in parts) or len(parts) < 3:
+            return False
+        if parts[1] == "sila-network":
+            if not parts[2] or parts[2] in (".", ".."):
+                return False
+        else:
+            allowed_repos = settings["references"]["independent_standard_repositories"]
+            project = "/".join(parts[1:3])
+            if project not in allowed_repos:
+                return False
+            if not re.fullmatch(
+                r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/blob/[a-fA-F0-9]{40}/[^?#]+",
+                obj.path,
+            ) or obj.query or obj.fragment:
+                return False
+    if obj.hostname == "www.rfc-editor.org":
+        if not re.fullmatch(r"/rfc/rfc[1-9][0-9]*(?:\.html)?", obj.path):
+            return False
+    if obj.hostname == "www.w3.org":
+        if not re.fullmatch(r"/TR/[0-9]{4}/[A-Za-z0-9._/-]+/?", obj.path):
+            return False
+    if obj.hostname == "html.spec.whatwg.org":
+        if not re.fullmatch(r"/commit-snapshots/[a-fA-F0-9]{40}/", obj.path):
+            return False
+    if obj.hostname == "www.unicode.org":
+        if not re.fullmatch(r"/reports/tr[0-9]+/tr[0-9]+-[0-9]+\.html", obj.path):
+            return False
     if discussion:
         return (obj.hostname == "sila-magicians.discourse.group"
                 and re.fullmatch(r"/t/[a-zA-Z0-9_-]+/[1-9][0-9]*/?", obj.path) is not None

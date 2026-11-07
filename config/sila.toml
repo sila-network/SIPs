@@ -19,4 +19,5 @@ categories = ["Core", "Networking", "Interface", "SRC"]
 required_sections = ["Abstract", "Specification", "Rationale", "Security Considerations", "Copyright"]
 
 [references]
-allowed_web_hosts = ["sila-magicians.discourse.group", "github.com", "www.rfc-editor.org", "www.w3.org", "www.unicode.org", "spec.whatwg.org"]
+allowed_web_hosts = ["sila-magicians.discourse.group", "github.com", "www.rfc-editor.org", "www.w3.org", "www.unicode.org", "html.spec.whatwg.org"]
+independent_standard_repositories = ["bitcoin/bips", "ChainAgnostic/CAIPs"]

@@ -198,3 +198,21 @@ grant an approval for SIP-1, bypass GitHub branch protection, or authorize
 a merge or release. The real reviewer roster still needs independent
 appointment. This repository gate is not automatically installed in
 other Sila repositories; each repository must be assessed separately.
+
+## Reference safety and Sila metadata contracts
+
+Sila's native checker uses a strict metadata order, short proposal titles
+(up to 44 characters), short descriptions (up to 140 characters), and
+pinned implementation source revisions. It resolves document-local anchors
+with the same Unicode heading identifiers that the Sila site generator uses.
+
+Independent technical standards may retain their own actual identities.
+Their configured links are restricted to stable revisions where supported;
+only the genuinely independent standard repositories explicitly listed in
+`config/sila.toml` may use pinned external GitHub source links.
+These checks validate **reference syntax**. They cannot by themselves attest
+that an external revision exists or that any external code is part of Sila.
+Any unverified Sila counterpart remains a blocker, not an invented artifact.
+
+SIP-1 remains a **Draft** and no approved or activated protocol status is
+created by these metadata checks.

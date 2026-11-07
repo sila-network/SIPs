@@ -351,6 +351,56 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=BODY + "\n### Details\n\nSee [bad](#details-2).\n")
         self.fails("unresolved heading anchor")
 
+    def test_independent_external_standard_commit_link_is_allowed(self):
+        self.create(body=BODY + "\nSee [independent format]("
+                    + "https://github.com/ChainAgnostic/CAIPs/blob/"
+                    + "a" * 40 + "/CAIPs/caip-10.md).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_independent_public_standard_link_is_allowed(self):
+        self.create(body=BODY + "\nSee [independent report]("
+                    + "https://www.w3.org/TR/2021/CRD-secure-contexts-20210918/).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_living_standard_requires_immutable_snapshot(self):
+        self.create(body=BODY + "\nSee [HTML standard]("
+                    + "https://html.spec.whatwg.org/commit-snapshots/"
+                    + "a" * 40 + "/).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_living_standard_unpinned_link_is_blocked(self):
+        self.create(body=BODY + "\nSee [mutable report](https://html.spec.whatwg.org/).\n")
+        self.fails("unsafe or unauthorized")
+
+    def test_invalid_external_standard_without_commit_is_blocked(self):
+        self.create(body=BODY + "\nSee [unpinned](https://github.com/bitcoin/bips/blob/master/bip-0038.mediawiki).\n")
+        self.fails("unsafe or unauthorized")
+
+    def test_external_standard_repo_home_is_not_a_reference(self):
+        self.create(body=BODY + "\nSee [unpinned](https://github.com/ChainAgnostic/CAIPs).\n")
+        self.fails("unsafe or unauthorized")
+
+    def test_sila_owner_url_must_not_escape_path_components(self):
+        self.create(body=BODY + "\nSee [unsafe](https://github.com/sila-network/../someone/secret).\n")
+        self.fails("unsafe or unauthorized")
+
+    def test_sila_owner_url_must_not_use_encoded_path_components(self):
+        self.create(body=BODY + "\nSee [unsafe](https://github.com/sila-network/%2e%2e/elsewhere).\n")
+        self.fails("unsafe or unauthorized")
+
+    def test_public_standard_requires_pinned_unicode_revision(self):
+        self.create(body=BODY + "\nSee [Unicode report]("
+                    + "https://www.unicode.org/reports/tr46/tr46-35.html).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_unpinned_unicode_report_is_blocked(self):
+        self.create(body=BODY + "\nSee [Unicode](https://www.unicode.org/reports/tr46/).\n")
+        self.fails("unsafe or unauthorized")
+
+    def test_rfc_number_is_required_for_external_reference(self):
+        self.create(body=BODY + "\nSee [draft](https://www.rfc-editor.org/rfc/).\n")
+        self.fails("unsafe or unauthorized")
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 
