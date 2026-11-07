@@ -28,6 +28,19 @@ HEADER_ORDER = (
 )
 MAX_TITLE = 44
 MAX_DESCRIPTION = 140
+# Section semantics and dependency maturity are Sila-native acceptance rules.
+# The two optional migration sections express Sila-specific upgrade impact.
+SECTION_ORDER = (
+    "Abstract", "Motivation", "Specification", "Rationale",
+    "Backwards Compatibility", "Migration", "Rollback Plan",
+    "Test Cases", "Reference Implementation", "Security Considerations",
+    "Copyright",
+)
+STATUS_MATURITY = {
+    "Idea": 0, "Draft": 1, "Stagnant": 1,
+    "Review": 2, "Last Call": 3, "Final": 4, "Living": 4,
+    "Withdrawn": 0,
+}
 PINNED_SILA_REFERENCE = re.compile(
     r"/sila-network/[a-zA-Z0-9_.-]+/(?:blob|tree|commit)/[a-fA-F0-9]{40}(?:/[^?#]+)?\Z"
 )
@@ -134,6 +147,11 @@ def allowed_url(url: str, settings: dict, *, discussion: bool = False) -> bool:
     return True
 
 
+def strip_inline_code(line: str) -> str:
+    """Ignore inline code examples when checking external links and references."""
+    return re.sub(r"(?<!`)(`+)(?!`).*?\1(?!`)", "", line)
+
+
 def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
     """Remove fenced examples before inspecting headings and references."""
     headings: list[str] = []
@@ -156,7 +174,7 @@ def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
         h = HEADING.fullmatch(line)
         if h:
             headings.append(h.group(1).strip())
-        links.extend(LINK.findall(line))
+        links.extend(LINK.findall(strip_inline_code(line)))
     if opened:
         raise ProposalError("unclosed Sila documentation code fence")
     return headings, links, "\n".join(visible)
@@ -222,6 +240,8 @@ def check_metadata(path: Path, meta: dict[str, str], settings: dict) -> int:
         reject(path, "title or description too long")
     if re.search(r"\bSIP-[1-9][0-9]*\b", meta["title"], re.IGNORECASE):
         reject(path, "title must not repeat the Sila proposal number")
+    if ":" in meta["title"] or ":" in meta["description"]:
+        reject(path, "Sila title and description must not contain a colon")
     governance = settings["governance"]
     if meta["status"] not in governance["statuses"]:
         reject(path, "unrecognized Sila status")
@@ -291,6 +311,13 @@ def check_sections(path: Path, headings: list[str], body: str, meta: dict, setti
     if meta["type"] == "Standards Track" and meta["status"] not in {"Idea", "Draft"}:
         if headings.count("Test Cases") != 1:
             reject(path, "reviewed Sila standard needs Test Cases")
+    if len(headings) != len(set(headings)):
+        reject(path, "duplicate Sila top-level section")
+    if any(title not in SECTION_ORDER for title in headings):
+        reject(path, "unrecognized Sila top-level section")
+    sequence = [SECTION_ORDER.index(title) for title in headings]
+    if sequence != sorted(sequence):
+        reject(path, "Sila document sections are out of canonical order")
 
 
 def check_requires(path: Path, meta: dict) -> list[int]:
@@ -302,6 +329,8 @@ def check_requires(path: Path, meta: dict) -> list[int]:
     ids = [int(x) for x in values]
     if len(ids) != len(set(ids)):
         reject(path, "duplicate normative dependency")
+    if ids != sorted(ids):
+        reject(path, "Sila normative dependencies must be in ascending order")
     if int(meta["sip"]) in ids:
         reject(path, "Sila proposal cannot require itself")
     return ids
@@ -350,11 +379,25 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
         for required in dependencies[number]:
             if required not in found:
                 reject(path, f"missing Sila normative dependency {required}")
-            if found[required][1]["status"] == "Withdrawn":
+            dependency_status = found[required][1]["status"]
+            if dependency_status == "Withdrawn":
                 reject(path, f"withdrawn Sila normative dependency {required}")
-        for referenced in REFERENCE.findall(visible):
+            if STATUS_MATURITY[dependency_status] < STATUS_MATURITY[meta["status"]]:
+                reject(path, f"Sila normative dependency SIP-{required} has insufficient status")
+        reference_text = "\n".join(strip_inline_code(line) for line in visible.splitlines())
+        for referenced in REFERENCE.findall(reference_text):
             if int(referenced) not in found:
                 reject(path, f"unknown Sila cross-reference SIP-{referenced}")
+        if meta["type"] == "Standards Track":
+            match = re.search(
+                r"^## Specification[ \t]*\n(.*?)(?=^## |\Z)",
+                reference_text, re.M | re.S,
+            )
+            specification = match.group(1) if match else ""
+            for referenced in REFERENCE.findall(specification):
+                target = int(referenced)
+                if target != number and target not in dependencies[number]:
+                    reject(path, f"Sila specification requires undeclared normative SIP-{target}")
         for value in links:
             check_link(root, path, value, settings)
     check_cycles(dependencies)

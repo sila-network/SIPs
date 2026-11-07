@@ -88,7 +88,7 @@ Every numbered SIP MUST start with a single flat metadata block between `---` de
 The additional fields have strict meanings:
 
 - `category` is required only for Standards Track and MUST be Core, Networking, Interface, or SRC.
-- `requires` lists genuine existing Sila SIP numbers that are normative dependencies. Self-references and references to missing SIPs are invalid.
+- `requires` lists genuine existing Sila SIP numbers in ascending order that are normative dependencies. Self-references and references to missing SIPs are invalid. Dependencies MUST be at least as mature as the referencing SIP; a withdrawn proposal cannot be used as a normative dependency.
 - `discussions-to` is an actual existing Sila community discussion URL, not a forum home page, an invented thread, or a link imported from elsewhere.
 - `last-call-deadline` is mandatory for Last Call and must identify the real end of the review interval.
 - `withdrawal-reason` is mandatory for Withdrawn.
@@ -102,11 +102,13 @@ An external independent technical standard MAY be linked only by a
 versioned reference permitted by Sila's original validator rules.
 Passing a URL format check does not verify that the remote resource exists.
 
+The Sila proposal title and description MUST be concise, without colon separators. In a Standards Track proposal, an explicit SIP reference within the Specification denotes a normative dependency and MUST appear in the `requires` metadata. Inline code examples do not create normative references.
+
 A metadata key MUST NOT be populated merely to satisfy a validator. A false author, date, discussion link, approval, or implementation reference is a substantive governance error. Dates in example templates are placeholders, never events. Fields not relevant to a proposal SHOULD be absent instead of carrying fictitious values.
 
 ### Document sections and submission contract
 
-Every normative proposal MUST include the following sections in order: Abstract, Specification, Rationale, Security Considerations, and Copyright. Additional sections MAY include Motivation, Test Cases, Reference Implementation, Migration, and Rollback Plan. The Abstract states what is proposed without claiming that it is already installed.
+Every normative proposal MUST include the following sections in order: Abstract, Specification, Rationale, Security Considerations, and Copyright. Optional top-level sections MUST follow the canonical Sila sequence: Abstract, Motivation, Specification, Rationale, Backwards Compatibility, Migration, Rollback Plan, Test Cases, Reference Implementation, Security Considerations, Copyright. Duplicate or unrecognized top-level sections are invalid. The Abstract states what is proposed without claiming that it is already installed.
 
 A Standards Track Specification MUST define affected Sila components, inputs and outputs, normative algorithms or state changes, valid and invalid conditions, and any numerical values or wire formats needed for two independent implementations to agree. The proposal MUST identify security-sensitive assumptions, dependencies, deployment prerequisites, and measurable acceptance conditions.
 

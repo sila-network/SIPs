@@ -192,7 +192,12 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
         self.assertNotIn("Approved by", detail)
 
     def test_full_new_review_candidate_stays_unapproved(self) -> None:
-        self.propose(status="Review")
+        # A Review cannot depend normatively on SIP-1 while it is Draft.
+        # This fixture covers an independent Sila proposal instead.
+        self.propose(status="Review", requires=None,
+                     body=CANDIDATE_TEXT.replace(
+                         "It requires the existing Sila process in [SIP-1](sip-1.md#rationale).",
+                         "It is an independent Sila proposal without normative dependencies."))
         self.build()
         self.assertIn("SIP-2", (self.root / "_site/statuses/review.html").read_text())
         self.assertNotIn("SIP-2", (self.root / "_site/statuses/final.html").read_text())

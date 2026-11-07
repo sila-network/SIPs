@@ -403,6 +403,109 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=BODY + "\nSee [draft](https://www.rfc-editor.org/rfc/).\n")
         self.fails("unsafe or unauthorized")
 
+    # Functional parity contracts: both accepted and denied cases are tested.
+    # No synthetic document is published by this fixture suite.
+    def test_optional_sections_canonical_order_is_accepted(self):
+        body = BODY.replace("## Rationale",
+            "## Motivation\n\nA real Sila-specific design motivation.\n\n"
+            "## Rationale")
+        body = body.replace("## Test Cases",
+            "## Backwards Compatibility\n\nNo incompatible Sila interface changes.\n\n"
+            "## Migration\n\nThis is a test-only migration contract.\n\n"
+            "## Rollback Plan\n\nThis is a test-only recovery contract.\n\n"
+            "## Test Cases")
+        body = body.replace("## Security Considerations",
+            "## Reference Implementation\n\nA conceptual Sila example with no deployed claim.\n\n"
+            "## Security Considerations")
+        self.create(body=body)
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_out_of_order_optional_sections_rejected(self):
+        changed = BODY.replace(
+            "## Test Cases",
+            "## Reference Implementation\n\nTest-only example.\n\n"
+            "## Backwards Compatibility\n\nA test-only migration issue.\n\n"
+            "## Test Cases",
+        )
+        self.create(body=changed)
+        self.fails("out of canonical order")
+
+    def test_unknown_top_level_section_rejected(self):
+        self.create(body=BODY.replace(
+            "## Test Cases", "## Unsupported Section\n\nAn unexpected document section.\n\n## Test Cases"))
+        self.fails("unrecognized Sila top-level section")
+
+    def test_duplicate_optional_section_rejected(self):
+        self.create(body=BODY.replace(
+            "## Test Cases", "## Motivation\n\nA purpose.\n\n## Motivation\n\nAnother purpose.\n\n## Test Cases"))
+        self.fails("duplicate Sila top-level section")
+
+    def test_metadata_title_colon_rejected(self):
+        self.create(title="Sila Rule: Native Proposal")
+        self.fails("must not contain a colon")
+
+    def test_metadata_description_colon_rejected(self):
+        self.create(description="Summary: a Sila rule")
+        self.fails("must not contain a colon")
+
+    def test_out_of_order_requires_rejected(self):
+        self.create(requires="3, 1")
+        self.fails("ascending order")
+
+    def test_valid_ascending_requires(self):
+        self.create(requires="1")
+        self.create(num=3, requires="1, 2")
+        self.assertEqual(len(validate_repository(self.root)), 3)
+
+    def test_review_cannot_depend_on_draft(self):
+        self.create(status="Review", requires="1")
+        self.fails("insufficient status")
+
+    def test_stagnant_maturity_is_not_stronger_than_review(self):
+        self.create(status="Stagnant")
+        self.create(num=3, status="Review", requires="2")
+        self.fails("insufficient status")
+
+    def test_draft_can_depend_on_draft(self):
+        self.create(requires="1")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_draft_cannot_depend_on_idea(self):
+        self.create(status="Idea")
+        self.create(num=3, requires="2")
+        self.fails("insufficient status")
+
+    def test_specification_mentions_normative_sip_without_requires(self):
+        self.create(body=BODY.replace(
+            "A Sila rule with defined inputs and a reproducible result.",
+            "A Sila rule requiring the previous SIP-1 semantics."
+        ))
+        self.fails("undeclared normative SIP-1")
+
+    def test_specification_reference_matches_declared_dependency(self):
+        self.create(requires="1", body=BODY.replace(
+            "A Sila rule with defined inputs and a reproducible result.",
+            "This original Sila feature builds on SIP-1."
+        ))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_informational_reference_does_not_force_requires(self):
+        self.create(body=BODY + "\nDiscussion about SIP-1 is informative.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_inline_example_link_does_not_trigger_security_error(self):
+        self.create(body=BODY + "\nExample: `[unsafe](javascript:example)`.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_inline_example_proposal_id_is_not_a_real_reference(self):
+        self.create(body=BODY + "\nExample: `SIP-999999` is illustrative.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_real_link_still_checked_next_to_inline_example(self):
+        self.create(body=BODY + "\n`[example](javascript:example)` "
+                    "See [outside](https://example.com/).\n")
+        self.fails("unsafe or unauthorized")
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 
