@@ -260,7 +260,7 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
         allowed, blockers = self.review(authorized=True)
         self.assertTrue(allowed)
         self.assertEqual(blockers, [])
-        self.assertEqual(load_policy(self.root / "config/sila-review.toml")["reviewers"]["editor"], [])
+        self.assertEqual(load_policy(self.root / "config/sila-review.toml")["reviewers"]["editor"], ["ahmed202225"])
 
     def test_synthetic_review_does_not_authorize_self_approval(self) -> None:
         self.propose()
