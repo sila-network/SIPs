@@ -291,13 +291,13 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
         self.assertFalse(allowed)
         self.assertIn("cannot authorize itself", blockers[0])
 
-    def test_sila_review_policy_is_valid_but_unappointed(self) -> None:
+    def test_sila_review_policy_has_appointment_but_no_fake_approval(self) -> None:
         result = subprocess.run(
             [sys.executable, str(self.root / "tools/sila_review.py"), "policy"],
             cwd=self.root, capture_output=True, text=True, check=False, timeout=20
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("no governance appointment inferred", result.stdout)
+        self.assertIn("appointments are not approvals", result.stdout)
 
     def test_pr_without_event_is_blocked(self) -> None:
         result = subprocess.run(

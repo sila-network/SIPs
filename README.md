@@ -49,9 +49,10 @@ GitHub APPROVED reviews against the explicitly authorized identities in
 - Changing the reviewer policy in the same pull request cannot authorize the
   change being reviewed.
 - Stale, withdrawn, dismissed, or self-issued reviews are not accepted.
-- No reviewers are appointed by this code. The initial roster is empty, so
-  applicable pull requests remain blocked until real reviewer accounts are
-  separately authorized by Sila Network.
+- Jihad Mustafa, GitHub `ahmed202225`, is expressly appointed to both
+  editorial and technical review roles for this Sila repository.
+  This appointment is not a submitted review, an approval, or a grant of
+  final decision authority to that account.
 - The gate has GitHub **read-only** permissions. It cannot approve, publish,
   merge, assign reviewers, or change a proposal's governance status.
 
@@ -195,8 +196,9 @@ automation to write the final decision on Ahmed's behalf.
 
 This adds a **technical PR gate for this SIP repository**. It does not
 grant an approval for SIP-1, bypass GitHub branch protection, or authorize
-a merge or release. The real reviewer roster still needs independent
-appointment. This repository gate is not automatically installed in
+a merge or release. Jihad's independent review must still be
+submitted and accepted for the exact current revision. This repository
+gate is not automatically installed in
 other Sila repositories; each repository must be assessed separately.
 
 ## Reference safety and Sila metadata contracts

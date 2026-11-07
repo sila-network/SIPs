@@ -1,6 +1,6 @@
-# Original Sila review policy. No reviewer is assumed to be authorized.
-# Sila Network must authorize real GitHub reviewer accounts separately.
-# This file is not itself proof of any governance appointment.
+# Original Sila review policy. Sila Network has expressly appointed
+# Jihad Mustafa (GitHub: ahmed202225) for technical and editorial reviews.
+# Appointment does not constitute a review decision or final authorization.
 
 [review]
 repository = "sila-network/SIPs"
@@ -9,5 +9,5 @@ code_roles = ["technical"]
 content_roles = ["editor"]
 
 [reviewers]
-editor = []
-technical = []
+editor = ["ahmed202225"]
+technical = ["ahmed202225"]

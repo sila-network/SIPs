@@ -52,10 +52,11 @@ def denied_word(encoded: str) -> str:
 
 
 class ClosureGateTests(unittest.TestCase):
-    def test_current_reviewer_policy_is_not_authorized(self):
-        blocked = assess_reviewer_roster(load_policy())
-        self.assertEqual(len(blocked), 2)
-        self.assertIn("editor", blocked[0])
+    def test_real_sila_reviewer_is_appointed_to_both_independent_roles(self):
+        policy = load_policy()
+        self.assertEqual(policy["reviewers"]["editor"], ["ahmed202225"])
+        self.assertEqual(policy["reviewers"]["technical"], ["ahmed202225"])
+        self.assertEqual(assess_reviewer_roster(policy), [])
 
     def test_current_account_cannot_review_itself(self):
         policy = deepcopy(load_policy())
