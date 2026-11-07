@@ -209,7 +209,7 @@ class NativeSpecTests(unittest.TestCase):
         self.fails("unknown Sila cross-reference")
 
     def test_known_cross_reference(self):
-        self.create(body=BODY+"\nRefer to the existing SIP-1.\n")
+        self.create(body=BODY+"\nRefer to the existing [SIP-1](sip-1.md#rationale).\n")
         self.assertEqual(len(validate_repository(self.root)), 2)
 
     def test_missing_normative_dependency(self):
@@ -485,12 +485,12 @@ class NativeSpecTests(unittest.TestCase):
     def test_specification_reference_matches_declared_dependency(self):
         self.create(requires="1", body=BODY.replace(
             "A Sila rule with defined inputs and a reproducible result.",
-            "This original Sila feature builds on SIP-1."
+            "This original Sila feature builds on [SIP-1](sip-1.md#rationale)."
         ))
         self.assertEqual(len(validate_repository(self.root)), 2)
 
     def test_informational_reference_does_not_force_requires(self):
-        self.create(body=BODY + "\nDiscussion about SIP-1 is informative.\n")
+        self.create(body=BODY + "\nDiscussion about [SIP-1](sip-1.md#rationale) is informative.\n")
         self.assertEqual(len(validate_repository(self.root)), 2)
 
     def test_inline_example_link_does_not_trigger_security_error(self):
@@ -505,6 +505,36 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=BODY + "\n`[example](javascript:example)` "
                     "See [outside](https://example.com/).\n")
         self.fails("unsafe or unauthorized")
+
+    def test_first_sila_reference_must_be_linked(self):
+        self.create(body=BODY + "\nThe first SIP-1 citation has no link.\n")
+        self.fails("first Sila reference SIP-1")
+
+    def test_first_sila_reference_link_to_other_file_rejected(self):
+        self.create(body=BODY + "\nSee [SIP-1](../LICENSE.md) for the rule.\n")
+        self.fails("must link to its own document")
+
+    def test_first_sila_reference_correct_link_accepted(self):
+        self.create(body=BODY + "\nSee [SIP-1](sip-1.md#rationale) for the rule.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_second_reference_can_be_plain_after_valid_first_link(self):
+        self.create(body=BODY + "\nSee [SIP-1](sip-1.md#rationale). "
+                    "The same SIP-1 is cited again here.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_unrelated_inline_example_does_not_count_as_first_citation(self):
+        self.create(body=BODY + "\n`SIP-1` is an example. "
+                    "See [SIP-1](sip-1.md#rationale) for the real citation.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_draft_cannot_link_to_undeclared_future_proposal(self):
+        self.create(body=BODY + "\nSee [SIP-9999](sip-9999.md).\n")
+        self.fails("unknown Sila cross-reference")
+
+    def test_first_sila_reference_link_fragment_must_resolve(self):
+        self.create(body=BODY + "\nSee [SIP-1](sip-1.md#missing-section).\n")
+        self.fails("unresolved heading anchor")
 
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])

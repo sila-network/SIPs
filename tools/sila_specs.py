@@ -48,6 +48,7 @@ FILENAME = re.compile(r"sip-([1-9][0-9]*)\.md\Z")
 PREAMBLE_LINE = re.compile(r"([a-z][a-z-]*):[ \t]+(.+)\Z")
 LINK = re.compile(r"!?\[[^\]\n]*\]\(([^)\s]+)\)")
 REFERENCE = re.compile(r"\bSIP-([0-9]+)\b")
+LINKED_SILA_REFERENCE = re.compile(r"(?<!!)\[(SIP-[1-9][0-9]*)\]\(([^)\s]+)\)")
 FENCE = re.compile(r"^[ \t]{0,3}(\x60{3,}|~{3,})")
 HEADING = re.compile(r"^## ([^\n]+?)[ \t]*$")
 ANCHOR_HEADING = re.compile(r"^#{1,4}[ \t]+(.+?)[ \t]*$")
@@ -226,6 +227,35 @@ def check_link(root: Path, document: Path, value: str, settings: dict) -> None:
             reject(document, f"unresolved heading anchor {value}")
 
 
+def check_first_sila_reference(path: Path, visible: str, current: int) -> None:
+    """A first external SIP citation must identify its own verified local source.
+
+    Only text outside fenced and inline examples counts. The ordinary link
+    resolver performs the separate existence and anchor checks.
+    """
+    seen: set[int] = set()
+    for line in visible.splitlines():
+        content = strip_inline_code(line)
+        citations = list(LINKED_SILA_REFERENCE.finditer(content))
+        for reference in REFERENCE.finditer(content):
+            number = int(reference.group(1))
+            if number == current or number in seen:
+                continue
+            seen.add(number)
+            expected = f"sip-{number}.md"
+            for citation in citations:
+                if citation.start(1) != reference.start():
+                    continue
+                href = citation.group(2)
+                parsed = urlsplit(href)
+                if (not parsed.scheme and not parsed.netloc
+                        and not parsed.query
+                        and parsed.path.rsplit("/", 1)[-1] == expected):
+                    break
+            else:
+                reject(path, f"first Sila reference SIP-{number} must link to its own document")
+
+
 def check_metadata(path: Path, meta: dict[str, str], settings: dict) -> int:
     match = FILENAME.fullmatch(path.name)
     if not match:
@@ -388,6 +418,7 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
         for referenced in REFERENCE.findall(reference_text):
             if int(referenced) not in found:
                 reject(path, f"unknown Sila cross-reference SIP-{referenced}")
+        check_first_sila_reference(path, visible, number)
         if meta["type"] == "Standards Track":
             match = re.search(
                 r"^## Specification[ \t]*\n(.*?)(?=^## |\Z)",
