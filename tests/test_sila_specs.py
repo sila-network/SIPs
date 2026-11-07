@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import unittest
 
-from tools.sila_specs import ProposalError, validate_repository
+from tools.sila_specs import HEADER_ORDER, ProposalError, validate_repository
 
 ROOT = Path(__file__).resolve().parents[1]
 TODAY = date.today().isoformat()
@@ -58,7 +58,8 @@ class NativeSpecTests(unittest.TestCase):
         body = changes.pop("body", BODY)
         data.update(changes)
         path = self.root / "SIPS" / f"sip-{num}.md"
-        content = "---\n" + "".join(f"{key}: {value}\n" for key, value in data.items() if value is not None)
+        ordered = sorted(data, key=lambda key: HEADER_ORDER.index(key) if key in HEADER_ORDER else len(HEADER_ORDER))
+        content = "---\n" + "".join(f"{key}: {data[key]}\n" for key in ordered if data[key] is not None)
         path.write_text(content + "---\n\n" + body, encoding="utf-8")
         return path
 
