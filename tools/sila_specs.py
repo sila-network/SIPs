@@ -21,12 +21,23 @@ FIELDS = frozenset((
     "withdrawal-reason", "approval-ref", "implementation-ref",
 ))
 MANDATORY = ("sip", "title", "description", "author", "status", "type", "created")
+HEADER_ORDER = (
+    "sip", "title", "description", "author", "discussions-to", "status",
+    "last-call-deadline", "type", "category", "created", "requires",
+    "withdrawal-reason", "approval-ref", "implementation-ref",
+)
+MAX_TITLE = 44
+MAX_DESCRIPTION = 140
+PINNED_SILA_REFERENCE = re.compile(
+    r"/sila-network/[a-zA-Z0-9_.-]+/(?:blob|tree|commit)/[a-fA-F0-9]{40}(?:/[^?#]+)?\Z"
+)
 FILENAME = re.compile(r"sip-([1-9][0-9]*)\.md\Z")
 PREAMBLE_LINE = re.compile(r"([a-z][a-z-]*):[ \t]+(.+)\Z")
 LINK = re.compile(r"!?\[[^\]\n]*\]\(([^)\s]+)\)")
 REFERENCE = re.compile(r"\bSIP-([0-9]+)\b")
 FENCE = re.compile(r"^[ \t]{0,3}(\x60{3,}|~{3,})")
 HEADING = re.compile(r"^## ([^\n]+?)[ \t]*$")
+ANCHOR_HEADING = re.compile(r"^#{1,4}[ \t]+(.+?)[ \t]*$")
 
 
 def reject(path: Path, reason: str) -> None:
@@ -56,6 +67,8 @@ def read_document(path: Path) -> tuple[dict[str, str], str]:
         if any(ord(char) < 32 for char in value):
             reject(path, f"control character in {key}")
         meta[key] = value
+    if list(meta) != sorted(meta, key=HEADER_ORDER.index):
+        reject(path, "Sila metadata fields are out of canonical order")
     return meta, "\n".join(lines[end + 1:]) + "\n"
 
 
@@ -118,7 +131,23 @@ def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
 
 
 def slug(title: str) -> str:
-    return re.sub(r"[^a-z0-9 -]", "", title.lower().strip()).replace(" ", "-")
+    """Match the original Sila site renderer for Unicode and punctuation."""
+    result = re.sub(r"[^\w -]", "", title.lower()).strip().replace(" ", "-")
+    return result or "section"
+
+
+def anchors_for_document(body: str) -> set[str]:
+    """Reproduce the site's generated anchors, including repeated headings."""
+    _, _, visible = visible_markdown(body)
+    names: set[str] = set()
+    counts: dict[str, int] = {}
+    for line in visible.splitlines():
+        header = ANCHOR_HEADING.fullmatch(line)
+        if header:
+            base = slug(header.group(1))
+            counts[base] = counts.get(base, 0) + 1
+            names.add(base if counts[base] == 1 else f"{base}-{counts[base]}")
+    return names
 
 
 def check_link(root: Path, document: Path, value: str, settings: dict) -> None:
@@ -142,7 +171,7 @@ def check_link(root: Path, document: Path, value: str, settings: dict) -> None:
         if target.suffix.lower() != ".md":
             reject(document, f"unsupported anchor in {value}")
         content = read_document(target)[1] if target.parent == root / "SIPS" else target.read_text(encoding="utf-8")
-        anchors = {slug(h) for h in visible_markdown(content)[0]}
+        anchors = anchors_for_document(content)
         if unquote(parsed.fragment) not in anchors:
             reject(document, f"unresolved heading anchor {value}")
 
@@ -157,8 +186,10 @@ def check_metadata(path: Path, meta: dict[str, str], settings: dict) -> int:
             reject(path, f"missing required field {key}")
     if meta["sip"] != str(number):
         reject(path, "Sila proposal number differs from filename")
-    if len(meta["title"]) > 80 or len(meta["description"]) > 240:
+    if len(meta["title"]) > MAX_TITLE or len(meta["description"]) > MAX_DESCRIPTION:
         reject(path, "title or description too long")
+    if re.search(r"\bSIP-[1-9][0-9]*\b", meta["title"], re.IGNORECASE):
+        reject(path, "title must not repeat the Sila proposal number")
     governance = settings["governance"]
     if meta["status"] not in governance["statuses"]:
         reject(path, "unrecognized Sila status")
@@ -200,8 +231,14 @@ def check_metadata(path: Path, meta: dict[str, str], settings: dict) -> int:
         reject(path, "unapproved proposal cannot claim an approval reference")
     if meta.get("discussions-to") and not allowed_url(meta["discussions-to"], settings, discussion=True):
         reject(path, "invalid Sila discussion topic URL")
-    if meta.get("implementation-ref") and not allowed_url(meta["implementation-ref"], settings):
-        reject(path, "invalid Sila implementation reference")
+    if meta.get("implementation-ref"):
+        value = meta["implementation-ref"]
+        if not allowed_url(value, settings):
+            reject(path, "invalid Sila implementation reference")
+        parsed = urlsplit(value)
+        if (parsed.hostname != "github.com" or parsed.query or parsed.fragment
+                or not PINNED_SILA_REFERENCE.fullmatch(parsed.path)):
+            reject(path, "Sila implementation reference must use an immutable commit")
     return number
 
 

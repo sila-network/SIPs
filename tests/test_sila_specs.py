@@ -292,6 +292,64 @@ class NativeSpecTests(unittest.TestCase):
         self.create(**{"implementation-ref":"https://github.com/outside/unknown"})
         self.fails("invalid Sila implementation reference")
 
+    def test_long_title_rejected(self):
+        self.create(title="Long original Sila design name " + "X" * 30)
+        self.fails("title or description too long")
+
+    def test_long_description_rejected(self):
+        self.create(description="Full Sila specification summary " + "X" * 150)
+        self.fails("title or description too long")
+
+    def test_title_cannot_embed_proposal_number(self):
+        self.create(title="SIP-2 Another Sila rule")
+        self.fails("must not repeat the Sila proposal number")
+
+    def test_out_of_order_metadata_rejected(self):
+        candidate = self.create()
+        candidate.write_text(candidate.read_text().replace(
+            "title: Original Sila Rule\ndescription: A new Sila-native standard for consideration.\n",
+            "description: A new Sila-native standard for consideration.\ntitle: Original Sila Rule\n",
+        ))
+        self.fails("out of canonical order")
+
+    def test_valid_immutable_sila_implementation_reference(self):
+        self.create(**{
+            "implementation-ref": (
+                "https://github.com/sila-network/sila-client/blob/"
+                + "a" * 40 + "/src/implementation.py"
+            )
+        })
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_mutable_sila_implementation_reference_rejected(self):
+        self.create(**{
+            "implementation-ref": "https://github.com/sila-network/sila-client/blob/main/README.md"
+        })
+        self.fails("immutable commit")
+
+    def test_sila_implementation_repo_home_is_not_immutable(self):
+        self.create(**{
+            "implementation-ref": "https://github.com/sila-network/sila-client"
+        })
+        self.fails("immutable commit")
+
+    def test_anchor_with_repeated_headings(self):
+        self.create(body=BODY + "\n### Details\n\nExample A.\n\n"
+                    + "### Details\n\nExample B.\n\nSee [second](#details-2).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_anchor_at_nested_heading_level(self):
+        self.create(body=BODY + "\n### Nested Clause\n\nSee [nested](#nested-clause).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_unicode_anchor_matches_native_site(self):
+        self.create(body=BODY + "\n### فحص سيلا\n\nSee [Arabic](#فحص-سيلا).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_missing_repeated_heading_anchor_rejected(self):
+        self.create(body=BODY + "\n### Details\n\nSee [bad](#details-2).\n")
+        self.fails("unresolved heading anchor")
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 

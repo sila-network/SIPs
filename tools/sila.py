@@ -119,7 +119,7 @@ def verify_metadata(meta: dict[str, str], filename: str, known: set[int]) -> Non
             raise SilaError(f"{filename}: required field {field} is missing")
     if meta["sip"] != number.group(1):
         raise SilaError(f"{filename}: proposal number does not match filename")
-    if len(meta["title"]) > 80 or len(meta["description"]) > 240:
+    if len(meta["title"]) > 44 or len(meta["description"]) > 140:
         raise SilaError(f"{filename}: title or description exceeds Sila limits")
     permitted = SETTINGS["governance"]
     names = [name.strip() for name in meta["author"].split(",")]
