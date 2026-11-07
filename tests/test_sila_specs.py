@@ -406,9 +406,9 @@ class NativeSpecTests(unittest.TestCase):
     # Functional parity contracts: both accepted and denied cases are tested.
     # No synthetic document is published by this fixture suite.
     def test_optional_sections_canonical_order_is_accepted(self):
-        body = BODY.replace("## Rationale",
+        body = BODY.replace("## Specification",
             "## Motivation\n\nA real Sila-specific design motivation.\n\n"
-            "## Rationale")
+            "## Specification")
         body = body.replace("## Test Cases",
             "## Backwards Compatibility\n\nNo incompatible Sila interface changes.\n\n"
             "## Migration\n\nThis is a test-only migration contract.\n\n"
