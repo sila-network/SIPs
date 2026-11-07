@@ -478,7 +478,7 @@ class NativeSpecTests(unittest.TestCase):
     def test_specification_mentions_normative_sip_without_requires(self):
         self.create(body=BODY.replace(
             "A Sila rule with defined inputs and a reproducible result.",
-            "A Sila rule requiring the previous SIP-1 semantics."
+            "A Sila rule requiring the previous [SIP-1](sip-1.md#rationale) semantics."
         ))
         self.fails("undeclared normative SIP-1")
 
