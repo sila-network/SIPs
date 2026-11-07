@@ -101,6 +101,8 @@ class SilaLifecycleIntegrationTests(unittest.TestCase):
             "LICENSE.md",
         ):
             shutil.copy2(SOURCE / name, self.root / name)
+        (self.root / "assets/sip-1").mkdir()
+        shutil.copy2(SOURCE / "assets/sip-1/process.svg", self.root / "assets/sip-1/process.svg")
         self.candidate = self.root / "SIPS/sip-2.md"
 
     def propose(self, *, status: str = "Draft", category: str = "Interface",

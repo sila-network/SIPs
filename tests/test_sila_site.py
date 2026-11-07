@@ -75,6 +75,49 @@ class SiteTests(unittest.TestCase):
         self.assertIn("Idea --&gt; Draft", detail)
         self.assertIn('<pre><code>', detail)
 
+    def test_original_sila_diagram_is_rendered_and_local(self) -> None:
+        page = self.page("SIPS/sip-1.html")
+        self.assertIn('<img class="sila-diagram" src="../assets/sip-1/process.svg"', page)
+        self.assertIn('alt="Original Sila proposal states', page)
+        self.assertTrue((self.output / "assets/sip-1/process.svg").is_file())
+        verify(self.output, self.documents, self.statuses)
+
+    def test_original_sila_diagram_svg_is_safe(self) -> None:
+        from tools.sila_site import validate_original_svg
+        source = ROOT / "assets/sip-1/process.svg"
+        validate_original_svg(source)
+        content = source.read_text(encoding="utf-8")
+        self.assertIn("Sila native proposal governance flow", content)
+        self.assertNotIn("<script", content)
+        self.assertNotIn("<foreignObject", content)
+        self.assertNotIn("https://", content)
+
+    def test_original_sila_diagram_rejects_script_elements(self) -> None:
+        from tools.sila_site import validate_original_svg
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "unsafe.svg"
+            source.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg"><script>unsafe()</script></svg>',
+                encoding="utf-8",
+            )
+            with self.assertRaises(SiteError):
+                validate_original_svg(source)
+
+    def test_original_sila_diagram_rejects_external_dependencies(self) -> None:
+        from tools.sila_site import validate_original_svg
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "unsafe.svg"
+            source.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg"><rect fill="url(https://invalid.local/image)"/></svg>',
+                encoding="utf-8",
+            )
+            with self.assertRaises(SiteError):
+                validate_original_svg(source)
+
+    def test_remote_image_in_document_is_escaped(self) -> None:
+        rendered = inline("![remote](https://example.org/remote.svg)")
+        self.assertNotIn("<img", rendered)
+
     def test_09_generated_toc_links_are_real(self) -> None:
         detail = self.page("SIPS/sip-1.html")
         self.assertIn('href="#security-considerations"', detail)

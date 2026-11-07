@@ -47,6 +47,8 @@ class NativeSpecTests(unittest.TestCase):
         shutil.copyfile(ROOT / "config/sila.toml", self.root / "config/sila.toml")
         shutil.copyfile(ROOT / "SIPS/sip-1.md", self.root / "SIPS/sip-1.md")
         shutil.copyfile(ROOT / "LICENSE.md", self.root / "LICENSE.md")
+        (self.root / "assets/sip-1").mkdir(parents=True)
+        shutil.copyfile(ROOT / "assets/sip-1/process.svg", self.root / "assets/sip-1/process.svg")
 
     def create(self, num=2, **changes):
         data = {

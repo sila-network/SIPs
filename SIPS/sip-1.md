@@ -129,6 +129,10 @@ There are eight allowed statuses. Status records the editorial and governance st
 
 The permitted ordinary progression is described below. Each arrow names a possible procedure, not an event that has already occurred:
 
+![Original Sila proposal states from Idea through Final, with Stagnant, Withdrawn, and Living paths](../assets/sip-1/process.svg)
+
+The original Sila diagram and the text-only process specification describe possible states, not historical Sila approvals.
+
 ```text
 Idea --> Draft --> Review --> Last Call --> Final
            ^         |            |

@@ -153,3 +153,6 @@ a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid 
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; }
 }
+
+/* Original Sila specification illustration, responsive and local-only. */
+.document-body .sila-diagram { display: block; width: 100%; height: auto; max-width: 100%; margin: 24px auto; border-radius: 12px; border: 1px solid #2c5363; }

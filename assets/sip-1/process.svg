@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 1080 620" width="1080" height="620">
+  <title>Sila native proposal governance flow</title>
+  <desc>Five ordinary proposal stages lead from Idea to Draft, Review, Last Call, and Final. Stagnant and Withdrawn are separate nonfinal outcomes. Approved Meta procedures may become Living after a genuine decision. All arrows describe potential transitions, not historical events.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#102B3B"/>
+      <stop offset="1" stop-color="#071927"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#24495C"/>
+      <stop offset="1" stop-color="#143648"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M 0 1 L 8 5 L 0 9 Z" fill="#72D2C3"/>
+    </marker>
+    <marker id="soft-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M 0 1 L 8 5 L 0 9 Z" fill="#B9AE96"/>
+    </marker>
+  </defs>
+  <rect width="1080" height="620" rx="24" fill="url(#canvas)"/>
+  <rect x="25" y="25" width="1030" height="570" rx="19" fill="none" stroke="#32566B" stroke-width="1.5"/>
+  <text x="55" y="72" fill="#C7F5E9" font-family="sans-serif" font-size="23" font-weight="700" letter-spacing="2">SILA  /  PROPOSAL LIFECYCLE</text>
+  <text x="55" y="105" fill="#A9BECA" font-family="sans-serif" font-size="14">Original specification states · each transition requires authentic review evidence</text>
+
+  <g fill="none" stroke="#72D2C3" stroke-width="3" marker-end="url(#arrow)">
+    <path d="M 226 191 H 252"/>
+    <path d="M 424 191 H 450"/>
+    <path d="M 622 191 H 648"/>
+    <path d="M 820 191 H 846"/>
+  </g>
+  <g font-family="sans-serif" text-anchor="middle">
+    <rect x="56" y="145" width="170" height="92" rx="14" fill="url(#tile)" stroke="#61B9B5" stroke-width="2"/>
+    <text x="141" y="186" fill="#FFFFFF" font-size="21" font-weight="700">Idea</text>
+    <text x="141" y="211" fill="#AFCAD1" font-size="12">Exploratory</text>
+    <rect x="252" y="145" width="172" height="92" rx="14" fill="url(#tile)" stroke="#61B9B5" stroke-width="2"/>
+    <text x="338" y="186" fill="#FFFFFF" font-size="21" font-weight="700">Draft</text>
+    <text x="338" y="211" fill="#AFCAD1" font-size="12">Assigned proposal</text>
+    <rect x="450" y="145" width="172" height="92" rx="14" fill="url(#tile)" stroke="#61B9B5" stroke-width="2"/>
+    <text x="536" y="186" fill="#FFFFFF" font-size="21" font-weight="700">Review</text>
+    <text x="536" y="211" fill="#AFCAD1" font-size="12">Technical scrutiny</text>
+    <rect x="648" y="145" width="172" height="92" rx="14" fill="url(#tile)" stroke="#E2B86D" stroke-width="2"/>
+    <text x="734" y="186" fill="#FFFFFF" font-size="21" font-weight="700">Last Call</text>
+    <text x="734" y="211" fill="#E0CBAD" font-size="12">Time-bound review</text>
+    <rect x="846" y="145" width="172" height="92" rx="14" fill="#22534F" stroke="#89E3B5" stroke-width="2"/>
+    <text x="932" y="186" fill="#FFFFFF" font-size="21" font-weight="700">Final</text>
+    <text x="932" y="211" fill="#BEF3D6" font-size="12">Explicitly approved</text>
+  </g>
+  <g fill="none" stroke="#B9AE96" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#soft-arrow)">
+    <path d="M 338 237 V 290 H 407"/>
+    <path d="M 536 237 V 290 H 490"/>
+    <path d="M 734 237 V 290 H 573"/>
+    <path d="M 536 237 V 360 H 788"/>
+  </g>
+  <g font-family="sans-serif" text-anchor="middle">
+    <rect x="407" y="275" width="166" height="76" rx="12" fill="#3D3842" stroke="#D0B5C0" stroke-width="2"/>
+    <text x="490" y="308" fill="#FFFFFF" font-size="20" font-weight="700">Stagnant</text>
+    <text x="490" y="330" fill="#E1C9D1" font-size="12">Recorded inactivity</text>
+    <rect x="788" y="336" width="196" height="76" rx="12" fill="#3D3842" stroke="#D0B5C0" stroke-width="2"/>
+    <text x="886" y="369" fill="#FFFFFF" font-size="20" font-weight="700">Withdrawn</text>
+    <text x="886" y="392" fill="#E1C9D1" font-size="12">Closed, not approved</text>
+  </g>
+  <path d="M 53 450 H 1027" stroke="#315264" stroke-width="1.5"/>
+  <text x="56" y="476" fill="#C7F5E9" font-family="sans-serif" font-size="15" font-weight="700">Special governance path</text>
+  <path d="M 504 534 H 617" stroke="#72D2C3" stroke-width="3" marker-end="url(#arrow)"/>
+  <g font-family="sans-serif" text-anchor="middle">
+    <rect x="185" y="500" width="319" height="77" rx="13" fill="#193F50" stroke="#67B0AA" stroke-width="2"/>
+    <text x="344" y="533" fill="#FFFFFF" font-size="19" font-weight="700">Approved Meta procedure</text>
+    <text x="344" y="555" fill="#ACC9D2" font-size="12">Authenticated governance decision</text>
+    <rect x="617" y="500" width="250" height="77" rx="13" fill="#23534E" stroke="#8EDBC0" stroke-width="2"/>
+    <text x="742" y="533" fill="#FFFFFF" font-size="20" font-weight="700">Living</text>
+    <text x="742" y="555" fill="#C6F3DF" font-size="12">Controlled maintenance</text>
+  </g>
+</svg>

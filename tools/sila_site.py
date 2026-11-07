@@ -14,7 +14,7 @@ from xml.etree import ElementTree as ET
 
 CATEGORIES = ("Core", "Networking", "Interface", "SRC", "Meta", "Informational")
 HEADING = re.compile(r"^(#{1,4})[ \t]+(.+?)\s*$")
-INLINE = re.compile(r"(\[[^\]\n]+\]\([^)]+\)|\*\*[^*\n]+\*\*|\x60[^\x60\n]+\x60)")
+INLINE = re.compile(r"(!?\[[^\]\n]+\]\([^)]+\)|\*\*[^*\n]+\*\*|\x60[^\x60\n]+\x60)")
 FENCE = re.compile(r"^[ \t]{0,3}(\x60{3,}|~{3,})")
 LIST_ITEM = re.compile(r"^[ \t]*[-*][ \t]+(.+)$")
 ORIGIN = "https://github.com/sila-network/SIPs/blob/sila/native-foundation/SIPS/"
@@ -36,7 +36,19 @@ def slug(value: str) -> str:
 def inline(text: str) -> str:
     output = []
     for token in INLINE.split(text):
-        if token.startswith("[") and "](" in token and token.endswith(")"):
+        if token.startswith("![") and "](" in token and token.endswith(")"):
+            label, href = token[2:-1].split("](", 1)
+            parsed = urlsplit(href)
+            if (not parsed.scheme and not parsed.netloc and not parsed.query
+                    and not parsed.fragment and not href.startswith(("/", "\\"))
+                    and re.fullmatch(r"\.\./assets/sip-[1-9][0-9]*/[a-z0-9_-]+\.svg", parsed.path)):
+                output.append(
+                    f'<img class="sila-diagram" src="{safe(href)}" '
+                    f'alt="{safe(label)}" loading="lazy">'
+                )
+            else:
+                output.append(safe(token))
+        elif token.startswith("[") and "](" in token and token.endswith(")"):
             label, href = token[1:-1].split("](", 1)
             parsed = urlsplit(href)
             local = not parsed.scheme and not parsed.netloc and not href.startswith(("/", "\\"))
@@ -337,6 +349,31 @@ def feed_xml(documents: list[dict]) -> str:
     return '<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(channel, encoding="unicode") + "\n"
 
 
+def validate_original_svg(source: Path) -> None:
+    if source.is_symlink() or not source.is_file() or source.stat().st_size > 256_000:
+        raise SiteError("Sila original diagram is missing, linked, or too large")
+    try:
+        root = ET.fromstring(source.read_bytes())
+    except ET.ParseError as error:
+        raise SiteError("invalid Sila original diagram source") from error
+    ns = "{http://www.w3.org/2000/svg}"
+    if root.tag != ns + "svg":
+        raise SiteError("Sila diagram requires original SVG root")
+    allowed = {
+        "svg", "title", "desc", "defs", "linearGradient", "stop",
+        "marker", "path", "rect", "text", "g", "circle", "line",
+    }
+    for element in root.iter():
+        if not element.tag.startswith(ns) or element.tag[len(ns):] not in allowed:
+            raise SiteError("unapproved element in original Sila diagram")
+        for key, value in element.attrib.items():
+            attribute = key.rsplit("}", 1)[-1].lower()
+            if (attribute.startswith("on") or attribute in ("href", "src", "style")
+                    or ("url(" in value and re.fullmatch(
+                        r"url\(#[A-Za-z0-9_-]+\)", value) is None)):
+                raise SiteError("unsafe attribute or link in original Sila diagram")
+
+
 def build_site(root: Path, output: Path, documents: list[tuple[Path, dict, str]], statuses: list[str]) -> None:
     raw_output = Path(output)
     if raw_output.is_symlink():
@@ -360,6 +397,15 @@ def build_site(root: Path, output: Path, documents: list[tuple[Path, dict, str]]
     assets.mkdir(exist_ok=True)
     for asset in ("site.css", "site.js"):
         shutil.copyfile(root / "assets" / asset, assets / asset)
+    # The Sila-owned SIP-1 process illustration is distributed only after
+    # SVG structure and local-only references have been validated.
+    diagram = root / "assets/sip-1/process.svg"
+    validate_original_svg(diagram)
+    diagram_folder = assets / "sip-1"
+    if diagram_folder.is_symlink():
+        raise SiteError("Sila diagram destination must not be a symlink")
+    diagram_folder.mkdir(exist_ok=True)
+    shutil.copyfile(diagram, diagram_folder / "process.svg")
     shutil.copyfile(root / "LICENSE.md", output / "LICENSE.md")
 
     metadata = [meta for _, meta, _ in documents]
