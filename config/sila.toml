@@ -1,0 +1,23 @@
+[sila]
+name = "Sila"
+issuer = "Sila Network"
+document_prefix = "SIP"
+repository = "sila-network/SIPs"
+site_title = "Sila Protocol Specifications"
+
+[governance]
+authorized_authors = ["Ahmed Ibrahim", "Jihad Mustafa"]
+final_decision_owner = "Ahmed Ibrahim"
+final_decision_github_login = "sila-chain"
+final_decision_exclusive = true
+independent_technical_review_required = true
+max_title_length = 44
+max_description_length = 140
+statuses = ["Idea", "Draft", "Review", "Last Call", "Final", "Stagnant", "Withdrawn", "Living"]
+types = ["Standards Track", "Meta", "Informational"]
+categories = ["Core", "Networking", "Interface", "SRC"]
+required_sections = ["Abstract", "Specification", "Rationale", "Security Considerations", "Copyright"]
+
+[references]
+allowed_web_hosts = ["sila-magicians.discourse.group", "github.com", "www.rfc-editor.org", "www.w3.org", "www.unicode.org", "html.spec.whatwg.org"]
+independent_standard_repositories = ["bitcoin/bips", "ChainAgnostic/CAIPs"]
