@@ -94,7 +94,8 @@ def markdown(body: str) -> str:
             if not opened:
                 flush_text()
                 opened, width = seq[0], len(seq)
-            elif seq[0] == opened and len(seq) >= width:
+            elif (seq[0] == opened and len(seq) >= width
+                  and not line[marker.end():].strip()):
                 output.append("<pre><code>" + safe("\n".join(code)) + "</code></pre>")
                 opened, width = "", 0
                 code.clear()

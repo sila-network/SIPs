@@ -310,6 +310,27 @@ class SiteTests(unittest.TestCase):
         with self.assertRaisesRegex(SiteError, "invalid Sila RSS XML"):
             verify(self.output, self.documents, self.statuses)
 
+    def test_code_fence_with_trailing_content_is_not_a_closer(self) -> None:
+        fence = chr(96) * 3
+        body = (fence + "text\nfirst\n" + fence + "not-closed\n"
+                + "still code\n" + fence + "\n")
+        html = markdown(body)
+        self.assertEqual(html.count("<pre><code>"), 1)
+        self.assertIn(fence + "not-closed", html)
+        self.assertIn("first\n" + fence + "not-closed\nstill code", html)
+
+    def test_code_fence_matching_delimiter_closes_normally(self) -> None:
+        fence = chr(96) * 3
+        html = markdown(fence + "text\nexample\n" + fence + "\nFollowing.")
+        self.assertIn("<pre><code>example</code></pre>", html)
+        self.assertIn("<p>Following.</p>", html)
+
+    def test_code_fence_does_not_close_on_shorter_delimiter(self) -> None:
+        long = chr(96) * 4
+        short = chr(96) * 3
+        html = markdown(long + "text\nfirst\n" + short + "\nsecond\n" + long)
+        self.assertIn("first\n" + short + "\nsecond", html)
+
     def test_40_no_placeholder_publication_record(self) -> None:
         self.assertEqual(len(self.documents), 1)
         self.assertEqual(self.documents[0][1]["status"], "Draft")
