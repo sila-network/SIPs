@@ -686,7 +686,7 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=self.citation_body(
             '{"type":"webpage","id":"test","DOI":"10.1000/test",'
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119","author":"not-a-list"}'))
-        self.fails("citation author data")
+        self.fails("citation name list")
 
     def test_csl_citation_additional_urls_reject_http(self):
         self.create(body=self.citation_body(
@@ -748,7 +748,7 @@ class NativeSpecTests(unittest.TestCase):
             '{"type":"webpage","id":"test","DOI":"10.1000/test",'
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
             '"author":[{"unverified":"Unknown"}]}'))
-        self.fails("citation author data")
+        self.fails("citation name variable")
 
     def test_csl_rejects_invalid_additional_url_port(self):
         self.create(body=self.citation_body(
@@ -864,13 +864,13 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=self.citation_body(
             '{"type":"webpage","id":"test","DOI":"10.1000/test",'
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119","page":true}'))
-        self.fails("citation number field")
+        self.fails("CSL number field")
 
     def test_csl_text_field_rejects_number(self):
         self.create(body=self.citation_body(
             '{"type":"webpage","id":"test","DOI":"10.1000/test",'
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119","title":123}'))
-        self.fails("citation string field")
+        self.fails("CSL string field")
 
     def test_csl_unknown_top_level_field_rejected(self):
         self.create(body=self.citation_body(
@@ -888,7 +888,7 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=self.citation_body(
             '{"type":"webpage","id":"test","DOI":"10.1000/test",'
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119","categories":[3]}'))
-        self.fails("citation categories")
+        self.fails("CSL categories")
 
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
