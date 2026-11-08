@@ -626,6 +626,78 @@ class NativeSpecTests(unittest.TestCase):
         self.create(description="X")
         self.fails("required minimum")
 
+    def citation_body(self, entry: str, *, label: str = "csl-json") -> str:
+        fence = chr(96) * 3
+        return BODY + "\n" + fence + label + "\n" + entry + "\n" + fence + "\n"
+
+    def test_valid_independent_csl_citation_record(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"sila-test","DOI":"10.1000/sila",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_independent_csl_citation_accepts_numeric_id(self):
+        self.create(body=self.citation_body(
+            '{"type":"article-journal","id":42,"DOI":"10.1000/example",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_invalid_csl_citation_json_rejected(self):
+        self.create(body=self.citation_body('{"type":"webpage", broken}'))
+        self.fails("invalid Sila citation JSON")
+
+    def test_duplicate_csl_citation_json_field_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","type":"book","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("duplicate JSON field")
+
+    def test_missing_csl_citation_doi_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("must include a DOI")
+
+    def test_missing_csl_citation_url_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test"}'))
+        self.fails("must include a URL")
+
+    def test_unknown_csl_citation_type_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"made-up","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("valid independent CSL type")
+
+    def test_csl_citation_rejects_non_scalar_id(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":[],"DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("valid identifier")
+
+    def test_csl_citation_rejects_insecure_url(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"http://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("safe HTTPS")
+
+    def test_csl_citation_invalid_author_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","author":"not-a-list"}'))
+        self.fails("citation author data")
+
+    def test_csl_citation_additional_urls_reject_http(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"custom":{"additional-urls":["http://unsafe.invalid"]}}'))
+        self.fails("additional URLs")
+
+    def test_other_json_code_fences_are_not_csl_citations(self):
+        self.create(body=self.citation_body(
+            '{"arbitrary":true}', label="json"))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 

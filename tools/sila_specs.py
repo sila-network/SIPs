@@ -6,6 +6,7 @@ governance vote, discussion, approval or activation really took place.
 from __future__ import annotations
 from datetime import date
 from pathlib import Path
+import json
 import re
 import tomllib
 from urllib.parse import urlsplit, unquote
@@ -59,6 +60,18 @@ BAD_SILA_NUMBER = re.compile(
     re.IGNORECASE,
 )
 MALFORMED_HEADING = re.compile(r"^[ \t]{0,3}#{1,6}(?![ \t#])")
+# CSL is an independently governed bibliographic standard, not a Sila identity.
+CSL_TYPES = frozenset((
+    "article", "article-journal", "article-magazine", "article-newspaper",
+    "bill", "book", "broadcast", "chapter", "classic", "collection",
+    "dataset", "document", "entry", "entry-dictionary", "entry-encyclopedia",
+    "event", "figure", "graphic", "hearing", "interview", "legal_case",
+    "legislation", "manuscript", "map", "motion_picture", "musical_score",
+    "pamphlet", "paper-conference", "patent", "performance", "periodical",
+    "personal_communication", "post", "post-weblog", "regulation",
+    "report", "review", "review-book", "software", "song", "speech",
+    "standard", "thesis", "treaty", "webpage",
+))
 
 
 def reject(path: Path, reason: str) -> None:
@@ -186,6 +199,89 @@ def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
     if opened:
         raise ProposalError("unclosed Sila documentation code fence")
     return headings, links, "\n".join(visible)
+
+
+def check_citation_json(path: Path, source: str) -> None:
+    """Validate the essential independent CSL citation record contract."""
+    def unique_object(pairs: list[tuple[str, object]]) -> dict:
+        value: dict = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError("duplicate JSON field")
+            value[key] = item
+        return value
+
+    try:
+        record = json.loads(source, object_pairs_hook=unique_object)
+    except (ValueError, TypeError) as error:
+        reject(path, f"invalid Sila citation JSON: {error}")
+    if not isinstance(record, dict):
+        reject(path, "Sila citation JSON must contain one object")
+    if record.get("type") not in CSL_TYPES:
+        reject(path, "Sila citation type is not a valid independent CSL type")
+    identifier = record.get("id")
+    if (type(identifier) not in (str, int, float)
+            or isinstance(identifier, str) and not identifier.strip()):
+        reject(path, "Sila citation needs a valid identifier")
+    if not isinstance(record.get("DOI"), str) or not record["DOI"].strip():
+        reject(path, "Sila citation must include a DOI")
+    url = record.get("URL")
+    if not isinstance(url, str) or not url.strip():
+        reject(path, "Sila citation must include a URL")
+    try:
+        parsed = urlsplit(url)
+        if (parsed.scheme != "https" or not parsed.hostname
+                or parsed.username or parsed.password or parsed.port not in (None, 443)):
+            reject(path, "Sila citation URL must use safe HTTPS")
+    except ValueError:
+        reject(path, "Sila citation URL must use safe HTTPS")
+    if "author" in record:
+        authors = record["author"]
+        if (not isinstance(authors, list) or
+                any(not isinstance(author, dict) or not author
+                    or any(not isinstance(value, str) for value in author.values())
+                    for author in authors)):
+            reject(path, "invalid independent CSL citation author data")
+    if "custom" in record:
+        custom = record["custom"]
+        if not isinstance(custom, dict):
+            reject(path, "invalid Sila citation custom data")
+        if "additional-urls" in custom:
+            urls = custom["additional-urls"]
+            if not isinstance(urls, list) or any(
+                not isinstance(item, str) or
+                urlsplit(item).scheme != "https" or
+                not urlsplit(item).hostname
+                for item in urls
+            ):
+                reject(path, "invalid Sila citation additional URLs")
+
+
+def check_citation_blocks(path: Path, body: str) -> None:
+    """Read structured citation examples only from explicitly labeled fences."""
+    opened = ""
+    width = 0
+    language = ""
+    lines: list[str] = []
+    for line in body.splitlines():
+        marker = FENCE.match(line)
+        if marker:
+            sequence = marker.group(1)
+            if not opened:
+                opened, width = sequence[0], len(sequence)
+                language = line[marker.end():].strip().lower()
+                lines = []
+            elif sequence[0] == opened and len(sequence) >= width and not line[marker.end():].strip():
+                if language == "csl-json":
+                    check_citation_json(path, "\n".join(lines))
+                opened, width, language, lines = "", 0, "", []
+            elif language == "csl-json":
+                lines.append(line)
+            continue
+        if opened and language == "csl-json":
+            lines.append(line)
+    if opened:
+        reject(path, "unclosed Sila citation or documentation code fence")
 
 
 def check_markdown_conventions(path: Path, visible: str) -> None:
@@ -430,6 +526,7 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
         raise ProposalError("Sila governance foundation SIP-1 is absent")
     for number, (path, meta, body) in found.items():
         headings, links, visible = visible_markdown(body)
+        check_citation_blocks(path, body)
         check_markdown_conventions(path, visible)
         check_sections(path, headings, visible, meta, settings)
         for required in dependencies[number]:

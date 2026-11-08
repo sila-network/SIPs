@@ -115,6 +115,13 @@ positive number. Malformed headings and HTML comments are not allowed in
 normative source text; code samples are distinguished from actual prose.
 Titles and descriptions MUST each have at least two characters.
 
+Independent bibliographic citations expressed in a fenced `csl-json`
+block MUST have valid JSON, a recognized CSL item type, an identifier,
+DOI, and a safe HTTPS URL. Optional authors and additional URLs must
+use the supported structured fields. Sila validates these citation
+contracts without presenting independent citations as Sila authorship
+or claiming that a syntax-valid external resource was independently verified.
+
 A metadata key MUST NOT be populated merely to satisfy a validator. A false author, date, discussion link, approval, or implementation reference is a substantive governance error. Dates in example templates are placeholders, never events. Fields not relevant to a proposal SHOULD be absent instead of carrying fictitious values.
 
 ### Document sections and submission contract
