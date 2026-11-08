@@ -71,8 +71,12 @@ def with_reviewers():
 
 
 class PolicyTests(unittest.TestCase):
-    def test_clean_roster_is_valid_without_inventing_reviewers(self):
-        self.assertEqual(load_policy()["reviewers"], {"editor": [], "technical": []})
+    def test_authorized_sila_reviewer_is_explicit_and_separate_from_pr_author(self):
+        policy = load_policy()
+        self.assertEqual(policy["reviewers"]["editor"], ["ahmed202225"])
+        self.assertEqual(policy["reviewers"]["technical"], ["ahmed202225"])
+        self.assertNotIn("sila-chain", policy["reviewers"]["editor"])
+        self.assertNotIn("sila-chain", policy["reviewers"]["technical"])
 
     def test_existing_policy_never_assumes_governance_role(self):
         p = load_policy()
@@ -175,7 +179,9 @@ class ChangeClassificationTests(unittest.TestCase):
             [changed("config/sila-review.toml", "added")],
             [],
         ]):
-            passed, messages = evaluate_pr(event(), load_policy(), "token")
+            empty_policy = deepcopy(load_policy())
+            empty_policy["reviewers"] = {"editor": [], "technical": []}
+            passed, messages = evaluate_pr(event(), empty_policy, "token")
         self.assertFalse(passed)
         self.assertIn("technical", messages[0])
 
@@ -224,7 +230,9 @@ class ReviewDecisionTests(unittest.TestCase):
             approved_reviewers([review()], "not-a-commit", "contributor")
 
     def test_roster_without_appointments_blocks_all_roles(self):
-        passed, reasons = require_reviews(load_policy(), {"editor", "technical"}, {"someone"})
+        empty_policy = deepcopy(load_policy())
+        empty_policy["reviewers"] = {"editor": [], "technical": []}
+        passed, reasons = require_reviews(empty_policy, {"editor", "technical"}, {"someone"})
         self.assertFalse(passed)
         self.assertEqual(len(reasons), 2)
 
@@ -289,7 +297,9 @@ class GithubEventTests(unittest.TestCase):
 
     def test_missing_roster_causes_blocked_pr(self):
         with patch("tools.sila_review.github_pages", side_effect=[[changed("SIPS/sip-1.md")], []]):
-            passed, messages = evaluate_pr(event(), load_policy(), "token")
+            empty_policy = deepcopy(load_policy())
+            empty_policy["reviewers"] = {"editor": [], "technical": []}
+            passed, messages = evaluate_pr(event(), empty_policy, "token")
         self.assertFalse(passed)
         self.assertEqual(len(messages), 2)
 
