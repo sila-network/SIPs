@@ -114,6 +114,24 @@ class NativeContentTests(unittest.TestCase):
             target.write_text("Sila candidate " + DENIED_IDENTITIES[0], encoding="utf-8")
             self.assertGreater(audit(Path(folder)), 0)
 
+    def test_extensionless_source_identity_is_audited(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "Makefile"
+            source.write_text("Original Sila " + DENIED_IDENTITIES[0], encoding="utf-8")
+            self.assertGreater(audit(Path(folder)), 0)
+
+    def test_dotfile_configuration_identity_is_audited(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / ".gitignore"
+            source.write_text("Original Sila " + DENIED_IDENTITIES[0], encoding="utf-8")
+            self.assertGreater(audit(Path(folder)), 0)
+
+    def test_binary_extensionless_source_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "configuration"
+            source.write_bytes(bytes([255, 254, 0]))
+            self.assertGreater(audit(Path(folder)), 0)
+
     def test_actual_sila_source_audit(self) -> None:
         self.assertEqual(audit(ROOT), 0)
 

@@ -205,7 +205,13 @@ def audit(root: Path = ROOT) -> int:
         if (any(marker in relative.lower() for marker in DENIED_IDENTITIES)
                 or DENIED_WORD_PATTERN.search(relative)):
             findings.append(f"{relative}: disallowed identity in path")
-        if path.suffix.lower() not in TEXT_SUFFIXES:
+        # Sila-owned configuration and executable source files can be
+        # extensionless (including dotfiles). Audit their contents too.
+        # Unrecognized binary extensions remain outside the text scan.
+        if path.suffix.lower() not in TEXT_SUFFIXES and path.suffix:
+            continue
+        if path.stat().st_size > 1_000_000:
+            findings.append(f"{relative}: unbounded text source requires manual audit")
             continue
         checked += 1
         try:
