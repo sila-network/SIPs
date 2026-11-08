@@ -899,7 +899,7 @@ class NativeSpecTests(unittest.TestCase):
         self.fails("straight quotation marks")
 
     def test_straight_quotes_are_accepted(self):
-        self.create(body=BODY + "\nAn \\"ordinary\\" quoted phrase is valid.\n")
+        self.create(body=BODY + '\nAn "ordinary" quoted phrase is valid.\n')
         self.assertEqual(len(validate_repository(self.root)), 2)
 
     def test_quoted_code_example_is_not_normative_prose(self):
