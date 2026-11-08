@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timezone
+from io import BytesIO
+import json
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -17,6 +19,7 @@ from tools.sila_review import (
     load_final_owner,
     github_time,
     load_policy,
+    live_pull_request_event,
     require_reviews,
     urlopen,
 )
@@ -68,6 +71,44 @@ def with_reviewers():
     p["reviewers"]["editor"] = ["Sila-editor"]
     p["reviewers"]["technical"] = ["Sila-reviewer"]
     return p
+
+
+class LiveReviewRefreshTests(unittest.TestCase):
+    def live_pr(self):
+        pr = event()["pull_request"]
+        pr["state"] = "open"
+        pr["merged_at"] = None
+        pr["head"]["repo"] = {"full_name": "sila-network/SIPs"}
+        return pr
+
+    def test_dispatch_rechecks_authenticated_current_revision(self):
+        with patch("tools.sila_review.urlopen",
+                   return_value=BytesIO(json.dumps(self.live_pr()).encode())):
+            actual = live_pull_request_event(12, "token", HEAD)
+        self.assertEqual(actual["pull_request"]["head"]["sha"], HEAD)
+        self.assertEqual(actual["repository"]["full_name"], "sila-network/SIPs")
+
+    def test_dispatch_rejects_stale_revision(self):
+        with patch("tools.sila_review.urlopen",
+                   return_value=BytesIO(json.dumps(self.live_pr()).encode())):
+            with self.assertRaisesRegex(ReviewError, "current checked-out"):
+                live_pull_request_event(12, "token", OLD)
+
+    def test_dispatch_rejects_forked_pr(self):
+        pr = self.live_pr()
+        pr["head"]["repo"]["full_name"] = "untrusted/branch"
+        with patch("tools.sila_review.urlopen",
+                   return_value=BytesIO(json.dumps(pr).encode())):
+            with self.assertRaisesRegex(ReviewError, "current checked-out"):
+                live_pull_request_event(12, "token", HEAD)
+
+    def test_dispatch_rejects_missing_token(self):
+        with self.assertRaisesRegex(ReviewError, "invalid authenticated"):
+            live_pull_request_event(12, "", HEAD)
+
+    def test_dispatch_rejects_missing_revision(self):
+        with self.assertRaisesRegex(ReviewError, "invalid authenticated"):
+            live_pull_request_event(12, "token", "")
 
 
 class PolicyTests(unittest.TestCase):

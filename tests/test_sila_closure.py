@@ -52,6 +52,17 @@ def denied_word(encoded: str) -> str:
 
 
 class ClosureGateTests(unittest.TestCase):
+    def test_sila_workflow_rechecks_independent_reviews_and_owner_decisions(self):
+        workflow = (ROOT / ".github" / "workflows" / "verify.yml").read_text(encoding="utf-8")
+        self.assertIn("pull_request_review:", workflow)
+        self.assertIn("types: [submitted, edited, dismissed]", workflow)
+        self.assertIn("issue_comment:", workflow)
+        self.assertIn("types: [created, edited, deleted]", workflow)
+        self.assertIn("refresh-owner-decision:", workflow)
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("--pr-number", workflow)
+        self.assertIn("github.event_name == 'pull_request_review'", workflow)
+
     def test_real_sila_reviewer_appointment_covers_both_roles(self):
         policy = load_policy()
         self.assertEqual(policy["reviewers"]["editor"], ["ahmed202225"])

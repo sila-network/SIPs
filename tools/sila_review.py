@@ -308,10 +308,43 @@ def evaluate_pr(event: dict, policy: dict, token: str) -> tuple[bool, list[str]]
     return final_owner_decision(comments, sha, reviewed_at, login)
 
 
+def live_pull_request_event(number: int, token: str, revision: str) -> dict:
+    """Refresh a PR using GitHub's authenticated live record, never user text."""
+    if (not isinstance(number, int) or number < 1 or not token
+            or not isinstance(revision, str) or not HEX_SHA.fullmatch(revision)):
+        raise ReviewError("invalid authenticated Sila review refresh")
+    repo = "sila-network/SIPs"
+    request = Request(
+        f"{GITHUB_HOST}/repos/{repo}/pulls/{number}",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "sila-native-review",
+        },
+    )
+    try:
+        with urlopen(request, timeout=18) as response:
+            pr = json.load(response)
+    except (HTTPError, URLError, TimeoutError, ValueError) as error:
+        raise ReviewError("could not verify live Sila pull-request data") from error
+    if (not isinstance(pr, dict) or pr.get("number") != number
+            or pr.get("state") != "open"
+            or pr.get("merged_at") is not None
+            or not isinstance(pr.get("head"), dict)
+            or not isinstance(pr.get("base"), dict)
+            or pr["head"].get("sha") != revision
+            or pr["head"].get("repo", {}).get("full_name") != repo
+            or pr["base"].get("repo", {}).get("full_name") != repo):
+        raise ReviewError("live Sila PR does not match the current checked-out source revision")
+    return {"repository": {"full_name": repo}, "pull_request": pr}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sila-only, read-only review gate")
     parser.add_argument("command", choices=("policy", "pull-request"))
     parser.add_argument("--event", default=os.getenv("GITHUB_EVENT_PATH", ""))
+    parser.add_argument("--pr-number", type=int, default=None)
     args = parser.parse_args()
     try:
         policy = load_policy()
@@ -319,11 +352,19 @@ def main() -> int:
         if args.command == "policy":
             print("PASS: Sila reviewer policy schema is valid; appointments are not approvals")
             return 0
-        if not args.event:
-            raise ReviewError("missing trusted pull-request event file")
-        with open(args.event, encoding="utf-8") as handle:
-            event = json.load(handle)
-        passed, blockers = evaluate_pr(event, policy, os.getenv("GITHUB_TOKEN", ""))
+        token = os.getenv("GITHUB_TOKEN", "")
+        if args.pr_number is not None:
+            if os.getenv("GITHUB_EVENT_NAME") != "workflow_dispatch":
+                raise ReviewError("Sila live review refresh requires a manual dispatch event")
+            event = live_pull_request_event(
+                args.pr_number, token, os.getenv("GITHUB_SHA", "")
+            )
+        else:
+            if not args.event:
+                raise ReviewError("missing trusted pull-request event file")
+            with open(args.event, encoding="utf-8") as handle:
+                event = json.load(handle)
+        passed, blockers = evaluate_pr(event, policy, token)
         if not passed:
             for blocker in blockers:
                 print("REVIEW BLOCKED:", blocker, file=sys.stderr)

@@ -5,7 +5,18 @@ on:
     branches:
       - "sila/**"
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, review_requested, review_request_removed]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  # Comments are processed from the trusted default branch after bootstrap.
+  issue_comment:
+    types: [created, edited, deleted]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Sila pull request to recheck after a final owner decision
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -13,6 +24,7 @@ permissions:
 
 jobs:
   native-checks:
+    if: github.event_name != 'issue_comment'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout Sila source
@@ -36,7 +48,36 @@ jobs:
       - name: Validate native Sila reviewer policy
         run: python3 tools/sila_review.py policy
       - name: Require authorized independent GitHub PR reviews
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 tools/sila_review.py pull-request
+          SILA_PR_NUMBER: ${{ inputs.pr_number || '' }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            python3 tools/sila_review.py pull-request --pr-number "$SILA_PR_NUMBER"
+          else
+            python3 tools/sila_review.py pull-request
+          fi
+
+  # This handler becomes active after the workflow is established on main.
+  # It dispatches the read-only review gate on the PR branch's actual SHA.
+  refresh-owner-decision:
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request && github.event.comment.user.login == 'sila-chain'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Recheck owner decision on the latest Sila PR revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          head_repo="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.repo.full_name')"
+          head_ref="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.ref')"
+          if [ "$head_repo" != "$GITHUB_REPOSITORY" ] || [ -z "$head_ref" ]; then
+            echo "Sila review refresh blocked: not a same-repository pull request"
+            exit 1
+          fi
+          gh workflow run verify.yml --repo "$GITHUB_REPOSITORY" --ref "$head_ref" -f pr_number="$PR_NUMBER"
