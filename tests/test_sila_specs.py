@@ -802,6 +802,94 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=self.citation_body('[]', raw=True))
         self.assertEqual(len(validate_repository(self.root)), 2)
 
+    def test_csl_non_author_contributor_role(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"editor":[{"given":"Sila","family":"Network"}]}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_contributor_field_requires_name_list(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","editor":"wrong"}'))
+        self.fails("citation name list")
+
+    def test_csl_contributor_field_rejects_unknown_subfield(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","translator":[{"fake":"x"}]}'))
+        self.fails("citation name variable")
+
+    def test_csl_issued_date_accepts_standard_date_parts(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"issued":{"date-parts":[[2026,11,8]]}}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_date_rejects_unrecognized_property(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","issued":{"unknown":"x"}}'))
+        self.fails("citation date variable")
+
+    def test_csl_date_rejects_too_many_parts(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"issued":{"date-parts":[[2026,11,8,4]]}}'))
+        self.fails("citation date variable")
+
+    def test_csl_date_rejects_boolean_part(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"issued":{"date-parts":[[true,11]]}}'))
+        self.fails("citation date variable")
+
+    def test_csl_date_rejects_nonobject(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","issued":"2026"}'))
+        self.fails("citation date variable")
+
+    def test_csl_number_field_accepts_string(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","page":"10-12"}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_number_field_rejects_boolean(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","page":true}'))
+        self.fails("citation number field")
+
+    def test_csl_text_field_rejects_number(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","title":123}'))
+        self.fails("citation string field")
+
+    def test_csl_unknown_top_level_field_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","unverified":true}'))
+        self.fails("unknown independent CSL citation field")
+
+    def test_csl_categories_allow_standard_string_list(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","categories":["Sila"]}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_categories_reject_nonstring(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119","categories":[3]}'))
+        self.fails("citation categories")
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 

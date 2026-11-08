@@ -202,11 +202,58 @@ def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
     return headings, links, "\n".join(visible)
 
 
+# These field groups implement the independent CSL JSON item data model.
+# Sila owns its validator, while CSL remains an external data standard.
+CSL_STRING_FIELDS = frozenset((
+    "type", "citation-key", "language", "journalAbbreviation",
+    "shortTitle", "abstract", "annote", "archive", "archive_collection",
+    "archive_location", "archive-place", "authority", "call-number",
+    "citation-label", "collection-title", "container-title",
+    "container-title-short", "dimensions", "division", "DOI", "event",
+    "event-title", "event-place", "genre", "ISBN", "ISSN", "jurisdiction",
+    "keyword", "medium", "note", "original-publisher",
+    "original-publisher-place", "original-title", "part-title", "PMCID",
+    "PMID", "publisher", "publisher-place", "references",
+    "reviewed-genre", "reviewed-title", "scale", "section", "source",
+    "status", "title", "title-short", "URL", "version",
+    "volume-title", "volume-title-short", "year-suffix",
+))
+CSL_NAME_FIELDS = frozenset((
+    "author", "chair", "collection-editor", "compiler", "composer",
+    "container-author", "contributor", "curator", "director",
+    "editor", "editorial-director", "executive-producer", "guest",
+    "host", "interviewer", "illustrator", "narrator", "organizer",
+    "original-author", "performer", "producer", "recipient",
+    "reviewed-author", "script-writer", "series-creator", "translator",
+))
+CSL_DATE_FIELDS = frozenset((
+    "accessed", "available-date", "event-date", "issued",
+    "original-date", "submitted",
+))
+CSL_NUMBER_FIELDS = frozenset((
+    "chapter-number", "citation-number", "collection-number",
+    "edition", "first-reference-note-number", "issue", "locator",
+    "number", "number-of-pages", "number-of-volumes", "page",
+    "page-first", "part", "printing", "supplement", "volume",
+))
 CSL_NAME_STRING = frozenset((
     "family", "given", "dropping-particle", "non-dropping-particle",
     "suffix", "literal",
 ))
 CSL_NAME_FLEX = frozenset(("comma-suffix", "static-ordering", "parse-names"))
+CSL_DATE_STRING = frozenset(("literal", "raw"))
+CSL_DATE_FLEX = frozenset(("season", "circa"))
+CSL_FIELDS = (CSL_STRING_FIELDS | CSL_NAME_FIELDS | CSL_DATE_FIELDS
+              | CSL_NUMBER_FIELDS | {"id", "categories", "custom"})
+
+
+def csl_scalar(value: object) -> bool:
+    """CSL mixed-value fields accept text or finite numbers, never booleans."""
+    return (
+        isinstance(value, str)
+        or type(value) is int
+        or type(value) is float and math.isfinite(value)
+    )
 
 
 def safe_citation_url(value: object) -> bool:
@@ -225,8 +272,45 @@ def safe_citation_url(value: object) -> bool:
         return False
 
 
+def check_csl_names(path: Path, value: object) -> None:
+    if not isinstance(value, list):
+        reject(path, "invalid independent CSL citation name list")
+    for person in value:
+        if (not isinstance(person, dict)
+                or any(
+                    (key in CSL_NAME_STRING and not isinstance(item, str))
+                    or (key in CSL_NAME_FLEX and not (
+                        csl_scalar(item) or isinstance(item, bool)
+                    ))
+                    or (key not in CSL_NAME_STRING and key not in CSL_NAME_FLEX)
+                    for key, item in person.items()
+                )):
+            reject(path, "invalid independent CSL citation name variable")
+
+
+def check_csl_date(path: Path, value: object) -> None:
+    if not isinstance(value, dict):
+        reject(path, "invalid independent CSL citation date variable")
+    for key, item in value.items():
+        if key in CSL_DATE_STRING:
+            valid = isinstance(item, str)
+        elif key in CSL_DATE_FLEX:
+            valid = csl_scalar(item) or isinstance(item, bool)
+        elif key == "date-parts":
+            valid = (
+                isinstance(item, list) and 1 <= len(item) <= 2
+                and all(isinstance(part, list) and 1 <= len(part) <= 3
+                        and all(csl_scalar(number) for number in part)
+                        for part in item)
+            )
+        else:
+            valid = False
+        if not valid:
+            reject(path, "invalid independent CSL citation date variable")
+
+
 def check_citation_json(path: Path, source: str) -> None:
-    """Validate the essential independent CSL citation record contract."""
+    """Validate an independent CSL JSON array with Sila-native restrictions."""
     def unique_object(pairs: list[tuple[str, object]]) -> dict:
         value: dict = {}
         for key, item in pairs:
@@ -254,14 +338,14 @@ def check_citation_json(path: Path, source: str) -> None:
 
 
 def check_citation_record(path: Path, record: dict) -> None:
-    """Apply the Sila citation contract to each independent CSL item."""
+    """Validate recognized CSL field groups, including nested name and date data."""
     if (not isinstance(record.get("type"), str)
             or record["type"] not in CSL_TYPES):
         reject(path, "Sila citation type is not a valid independent CSL type")
     identifier = record.get("id")
-    if (type(identifier) not in (str, int, float)
-            or isinstance(identifier, str) and not identifier.strip()
-            or isinstance(identifier, float) and not math.isfinite(identifier)):
+    if not csl_scalar(identifier) or (
+        isinstance(identifier, str) and not identifier.strip()
+    ):
         reject(path, "Sila citation needs a valid identifier")
     if not isinstance(record.get("DOI"), str) or not record["DOI"].strip():
         reject(path, "Sila citation must include a DOI")
@@ -270,29 +354,34 @@ def check_citation_record(path: Path, record: dict) -> None:
         reject(path, "Sila citation must include a URL")
     if not safe_citation_url(url):
         reject(path, "Sila citation URL must use safe HTTPS")
-    if "author" in record:
-        authors = record["author"]
-        if not isinstance(authors, list):
-            reject(path, "invalid independent CSL citation author data")
-        for author in authors:
-            if (not isinstance(author, dict) or not author
-                    or any(
-                        (key in CSL_NAME_STRING and not isinstance(value, str))
-                        or (key in CSL_NAME_FLEX and type(value) not in (str, int, float, bool))
-                        or (key not in CSL_NAME_STRING and key not in CSL_NAME_FLEX)
-                        for key, value in author.items()
-                    )):
-                reject(path, "invalid independent CSL citation author data")
-    if "custom" in record:
-        custom = record["custom"]
-        if not isinstance(custom, dict):
-            reject(path, "invalid Sila citation custom data")
-        if "additional-urls" in custom:
-            urls = custom["additional-urls"]
-            if not isinstance(urls, list) or any(
-                not safe_citation_url(item) for item in urls
+
+    for key, value in record.items():
+        if key not in CSL_FIELDS:
+            reject(path, f"unknown independent CSL citation field {key}")
+        if key in CSL_STRING_FIELDS:
+            if not isinstance(value, str):
+                reject(path, f"invalid independent CSL string field {key}")
+        elif key in CSL_NUMBER_FIELDS:
+            if not csl_scalar(value):
+                reject(path, f"invalid independent CSL number field {key}")
+        elif key in CSL_NAME_FIELDS:
+            check_csl_names(path, value)
+        elif key in CSL_DATE_FIELDS:
+            check_csl_date(path, value)
+        elif key == "categories":
+            if not isinstance(value, list) or not all(
+                isinstance(item, str) for item in value
             ):
-                reject(path, "invalid Sila citation additional URLs")
+                reject(path, "invalid independent CSL categories")
+        elif key == "custom":
+            if not isinstance(value, dict):
+                reject(path, "invalid Sila citation custom data")
+            if "additional-urls" in value:
+                links = value["additional-urls"]
+                if not isinstance(links, list) or any(
+                    not safe_citation_url(item) for item in links
+                ):
+                    reject(path, "invalid Sila citation additional URLs")
 
 
 def check_citation_blocks(path: Path, body: str) -> None:
