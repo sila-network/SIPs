@@ -922,6 +922,37 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body="# Unscoped title\n\n" + BODY)
         self.fails("must start with the Abstract heading")
 
+    def test_reject_symlinked_proposal_file_at_validation_boundary(self):
+        link = self.create()
+        actual = self.root / "untrusted-document.md"
+        link.rename(actual)
+        link.symlink_to(actual)
+        self.fails("symbolic link is not a Sila proposal source")
+
+    def test_reject_symlinked_sila_proposal_directory(self):
+        document_folder = self.root / "SIPS"
+        actual = self.root / "untrusted-source"
+        document_folder.rename(actual)
+        document_folder.symlink_to(actual, target_is_directory=True)
+        self.fails("directory cannot be a symbolic link")
+
+    def test_uppercase_sila_proposal_file_extension_is_rejected(self):
+        proposal = self.create()
+        proposal.rename(proposal.with_suffix(".MD"))
+        self.fails("noncanonical Sila proposal filename extension")
+
+    def test_nested_sila_proposal_directories_are_rejected(self):
+        (self.root / "SIPS" / "nested").mkdir()
+        self.fails("nested Sila proposal directories")
+
+    def test_missing_metadata_proposal_reference_is_rejected(self):
+        self.create(description="A Sila rule that mentions SIP-999 without a source.")
+        self.fails("unknown Sila cross-reference SIP-999")
+
+    def test_existing_metadata_proposal_reference_is_accepted(self):
+        self.create(description="A Sila rule concerning original SIP-1 governance.")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 

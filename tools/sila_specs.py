@@ -644,8 +644,19 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
     root = root.resolve()
     settings = tomllib.loads((root / "config" / "sila.toml").read_text(encoding="utf-8"))
     folder = root / "SIPS"
+    if folder.is_symlink():
+        raise ProposalError("Sila proposal directory cannot be a symbolic link")
     if not folder.is_dir():
         raise ProposalError("Sila proposal directory is missing")
+    # Only actual, flat, canonical source documents may enter the validator.
+    # Symlinks and alternate-cased extensions must never bypass verification.
+    for entry in folder.iterdir():
+        if entry.is_symlink():
+            reject(entry, "symbolic link is not a Sila proposal source")
+        if entry.is_dir():
+            reject(entry, "nested Sila proposal directories are not supported")
+        if entry.is_file() and entry.suffix.lower() == ".md" and entry.suffix != ".md":
+            reject(entry, "noncanonical Sila proposal filename extension")
     paths = sorted(folder.glob("*.md"))
     if not paths:
         raise ProposalError("no Sila proposal documents")
@@ -674,7 +685,7 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
             if STATUS_MATURITY[dependency_status] < STATUS_MATURITY[meta["status"]]:
                 reject(path, f"Sila normative dependency SIP-{required} has insufficient status")
         reference_text = "\n".join(strip_inline_code(line) for line in visible.splitlines())
-        for referenced in REFERENCE.findall(reference_text):
+        for referenced in REFERENCE.findall(reference_text + "\n" + meta["description"]):
             target = int(referenced)
             if target not in found:
                 reject(path, f"unknown Sila cross-reference SIP-{referenced}")
