@@ -626,9 +626,11 @@ class NativeSpecTests(unittest.TestCase):
         self.create(description="X")
         self.fails("required minimum")
 
-    def citation_body(self, entry: str, *, label: str = "csl-json") -> str:
+    def citation_body(self, entry: str, *, label: str = "csl-json",
+                      raw: bool = False) -> str:
         fence = chr(96) * 3
-        return BODY + "\n" + fence + label + "\n" + entry + "\n" + fence + "\n"
+        content = entry if raw or label != "csl-json" else "[" + entry + "]"
+        return BODY + "\n" + fence + label + "\n" + content + "\n" + fence + "\n"
 
     def test_valid_independent_csl_citation_record(self):
         self.create(body=self.citation_body(
@@ -760,6 +762,44 @@ class NativeSpecTests(unittest.TestCase):
             '{"type":"webpage","id":"test","DOI":"10.1000/test",'
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
             '"custom":{"additional-urls":["https://www.rfc-editor.org/rfc/rfc8446"]}}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_array_with_two_independent_records(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"first","DOI":"10.1000/first",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"},'
+            '{"type":"webpage","id":"second","DOI":"10.1000/second",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc8446"}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_second_record_is_not_skipped(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"first","DOI":"10.1000/first",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"},'
+            '{"type":"webpage","id":"second",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc8446"}'))
+        self.fails("must include a DOI")
+
+    def test_csl_top_level_object_without_array_rejected(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}', raw=True))
+        self.fails("list of CSL records")
+
+    def test_csl_array_rejects_nonobject_element(self):
+        self.create(body=self.citation_body('["not-a-record"]', raw=True))
+        self.fails("list must contain CSL objects")
+
+    def test_csl_array_rejects_nested_arrays(self):
+        self.create(body=self.citation_body('[[]]', raw=True))
+        self.fails("list must contain CSL objects")
+
+    def test_csl_array_rejects_null_element(self):
+        self.create(body=self.citation_body('[null]', raw=True))
+        self.fails("list must contain CSL objects")
+
+    def test_csl_empty_array_matches_independent_schema(self):
+        self.create(body=self.citation_body('[]', raw=True))
         self.assertEqual(len(validate_repository(self.root)), 2)
 
     def test_current_repository_validates(self):

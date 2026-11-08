@@ -245,8 +245,16 @@ def check_citation_json(path: Path, source: str) -> None:
         )
     except (ValueError, TypeError) as error:
         reject(path, f"invalid Sila citation JSON: {error}")
-    if not isinstance(record, dict):
-        reject(path, "Sila citation JSON must contain one object")
+    if not isinstance(record, list):
+        reject(path, "Sila citation JSON must contain a list of CSL records")
+    for citation in record:
+        if not isinstance(citation, dict):
+            reject(path, "Sila citation list must contain CSL objects")
+        check_citation_record(path, citation)
+
+
+def check_citation_record(path: Path, record: dict) -> None:
+    """Apply the Sila citation contract to each independent CSL item."""
     if (not isinstance(record.get("type"), str)
             or record["type"] not in CSL_TYPES):
         reject(path, "Sila citation type is not a valid independent CSL type")

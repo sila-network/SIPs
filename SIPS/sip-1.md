@@ -116,8 +116,8 @@ normative source text; code samples are distinguished from actual prose.
 Titles and descriptions MUST each have at least two characters.
 
 Independent bibliographic citations expressed in a fenced `csl-json`
-block MUST have valid JSON, a recognized CSL item type, an identifier,
-DOI, and a safe HTTPS URL. Optional authors and additional URLs must
+block MUST be a JSON array of CSL objects. Every record MUST have a
+recognized CSL item type, an identifier, DOI, and a safe HTTPS URL. Optional authors and additional URLs must
 use the supported structured fields. Sila validates these citation
 contracts without presenting independent citations as Sila authorship
 or claiming that a syntax-valid external resource was independently verified.
