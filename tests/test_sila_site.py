@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 import json
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
@@ -330,6 +331,79 @@ class SiteTests(unittest.TestCase):
         short = chr(96) * 3
         html = markdown(long + "text\nfirst\n" + short + "\nsecond\n" + long)
         self.assertIn("first\n" + short + "\nsecond", html)
+
+    def test_fenced_heading_does_not_create_broken_table_of_contents(self) -> None:
+        triple = chr(96) * 3
+        meta = self.documents[0][1]
+        body = self.documents[0][2] + (
+            "\n" + triple + "md\n## Ghost Example\n" + triple + "\n"
+        )
+        html = page_document(meta, body)
+        self.assertNotIn('href="#ghost-example"', html)
+        self.assertIn("## Ghost Example", html)
+
+    def test_multiple_original_diagrams_are_copied_into_site(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            shutil.copytree(ROOT / "assets", project / "assets")
+            shutil.copyfile(ROOT / "LICENSE.md", project / "LICENSE.md")
+            extra = project / "assets/sip-1/additional.svg"
+            extra.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg"><title>Sila figure</title></svg>',
+                encoding="utf-8",
+            )
+            meta = self.documents[0][1]
+            body = self.documents[0][2] + (
+                "\n![Additional](../assets/sip-1/additional.svg)\n"
+            )
+            records = [(project / "SIPS/sip-1.md", meta, body)]
+            generate(project, self.output, records, self.statuses)
+            self.assertTrue((self.output / "assets/sip-1/additional.svg").is_file())
+            verify(self.output, records, self.statuses)
+
+    def test_fenced_example_figure_is_not_published(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            shutil.copytree(ROOT / "assets", project / "assets")
+            shutil.copyfile(ROOT / "LICENSE.md", project / "LICENSE.md")
+            triple = chr(96) * 3
+            body = self.documents[0][2] + (
+                "\n" + triple + "md\n![Sample](../assets/sip-1/example.svg)\n"
+                + triple + "\n"
+            )
+            records = [(project / "SIPS/sip-1.md", self.documents[0][1], body)]
+            generate(project, self.output, records, self.statuses)
+            self.assertFalse((self.output / "assets/sip-1/example.svg").exists())
+
+    def test_existing_generated_index_symlink_cannot_overwrite_outside_source(self) -> None:
+        victim = self.output.parent / "private-document.md"
+        victim.write_text("protected Sila document", encoding="utf-8")
+        target = self.output / "index.html"
+        target.unlink()
+        target.symlink_to(victim)
+        with self.assertRaisesRegex(SiteError, "destination must not be a symlink"):
+            generate(ROOT, self.output, self.documents, self.statuses)
+        self.assertEqual(victim.read_text(encoding="utf-8"), "protected Sila document")
+
+    def test_existing_generated_asset_symlink_cannot_overwrite_outside_source(self) -> None:
+        victim = self.output.parent / "private-stylesheet.css"
+        victim.write_text("protected Sila stylesheet", encoding="utf-8")
+        target = self.output / "assets/site.css"
+        target.unlink()
+        target.symlink_to(victim)
+        with self.assertRaises(SiteError):
+            generate(ROOT, self.output, self.documents, self.statuses)
+        self.assertEqual(victim.read_text(encoding="utf-8"), "protected Sila stylesheet")
+
+    def test_existing_diagram_symlink_cannot_overwrite_outside_source(self) -> None:
+        victim = self.output.parent / "private-diagram.svg"
+        victim.write_text("protected Sila diagram", encoding="utf-8")
+        target = self.output / "assets/sip-1/process.svg"
+        target.unlink()
+        target.symlink_to(victim)
+        with self.assertRaises(SiteError):
+            generate(ROOT, self.output, self.documents, self.statuses)
+        self.assertEqual(victim.read_text(encoding="utf-8"), "protected Sila diagram")
 
     def test_40_no_placeholder_publication_record(self) -> None:
         self.assertEqual(len(self.documents), 1)

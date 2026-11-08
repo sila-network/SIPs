@@ -296,9 +296,32 @@ def page_group(item: str, records: list[dict], *, kind: str) -> str:
     return layout(f"{item} Sila proposals", content, "../")
 
 
+def visible_source_lines(body: str) -> list[str]:
+    """Extract normative lines without treating fenced examples as site content."""
+    opened = ""
+    width = 0
+    result = []
+    for line in body.splitlines():
+        marker = FENCE.match(line)
+        if marker:
+            seq = marker.group(1)
+            if not opened:
+                opened, width = seq[0], len(seq)
+            elif (seq[0] == opened and len(seq) >= width
+                  and not line[marker.end():].strip()):
+                opened, width = "", 0
+            continue
+        if not opened:
+            result.append(line)
+    if opened:
+        raise SiteError("unclosed Sila documentation code fence")
+    return result
+
+
 def page_document(meta: dict, body: str) -> str:
     classification = label(meta)
-    sections = [HEADING.fullmatch(line).group(2) for line in body.splitlines() if HEADING.fullmatch(line) and line.startswith("## ")]
+    sections = [HEADING.fullmatch(line).group(2) for line in visible_source_lines(body)
+                if line.startswith("## ") and HEADING.fullmatch(line)]
     toc = "".join(f'<li><a href="#{safe(slug(section))}">{safe(section)}</a></li>' for section in sections)
     metadata = (
         ("Status", meta["status"]), ("Type", meta["type"]),
@@ -375,6 +398,22 @@ def validate_original_svg(source: Path) -> None:
                 raise SiteError("unsafe attribute or link in original Sila diagram")
 
 
+DIAGRAM_REFERENCE = re.compile(
+    r"!\[[^\]\n]*\]\((\.\./assets/sip-[1-9][0-9]*/[a-z0-9_-]+\.svg)\)"
+)
+
+
+def safe_generated_target(output: Path, destination: Path) -> None:
+    """Fail closed instead of following symlinked generated files or parents."""
+    if not destination.resolve().is_relative_to(output):
+        raise SiteError("generated Sila output escapes its destination")
+    current = destination
+    while current != output:
+        if current.is_symlink():
+            raise SiteError("generated Sila destination must not be a symlink")
+        current = current.parent
+
+
 def build_site(root: Path, output: Path, documents: list[tuple[Path, dict, str]], statuses: list[str]) -> None:
     raw_output = Path(output)
     if raw_output.is_symlink():
@@ -397,40 +436,62 @@ def build_site(root: Path, output: Path, documents: list[tuple[Path, dict, str]]
         raise SiteError("generated asset directory may not be a symlink")
     assets.mkdir(exist_ok=True)
     for asset in ("site.css", "site.js"):
-        shutil.copyfile(root / "assets" / asset, assets / asset)
-    # The Sila-owned SIP-1 process illustration is distributed only after
-    # SVG structure and local-only references have been validated.
-    diagram = root / "assets/sip-1/process.svg"
-    validate_original_svg(diagram)
-    diagram_folder = assets / "sip-1"
-    if diagram_folder.is_symlink():
-        raise SiteError("Sila diagram destination must not be a symlink")
-    diagram_folder.mkdir(exist_ok=True)
-    shutil.copyfile(diagram, diagram_folder / "process.svg")
+        destination = assets / asset
+        safe_generated_target(output, destination)
+        shutil.copyfile(root / "assets" / asset, destination)
+
+    # Publish only validated, referenced Sila-owned illustrations.
+    diagrams = {"assets/sip-1/process.svg"}
+    for _, _, body in documents:
+        visible = "\n".join(visible_source_lines(body))
+        for link in DIAGRAM_REFERENCE.findall(visible):
+            diagrams.add(link[3:])
+    for relative in sorted(diagrams):
+        source = root / relative
+        validate_original_svg(source)
+        destination = output / relative
+        safe_generated_target(output, destination)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, destination)
+    safe_generated_target(output, output / "LICENSE.md")
     shutil.copyfile(root / "LICENSE.md", output / "LICENSE.md")
 
     metadata = [meta for _, meta, _ in documents]
-    (output / "index.html").write_text(page_index(metadata), encoding="utf-8")
-    (output / "categories/index.html").write_text(page_categories(metadata), encoding="utf-8")
-    (output / "statuses/index.html").write_text(page_statuses(metadata, statuses), encoding="utf-8")
+    for relative, content in (
+        ("index.html", page_index(metadata)),
+        ("categories/index.html", page_categories(metadata)),
+        ("statuses/index.html", page_statuses(metadata, statuses)),
+    ):
+        destination = output / relative
+        safe_generated_target(output, destination)
+        destination.write_text(content, encoding="utf-8")
     for group in CATEGORIES:
         chosen = [meta for meta in metadata if label(meta) == group]
-        (output / "categories" / f"{slug(group)}.html").write_text(
-            page_group(group, chosen, kind="category"), encoding="utf-8")
+        destination = output / "categories" / f"{slug(group)}.html"
+        safe_generated_target(output, destination)
+        destination.write_text(page_group(group, chosen, kind="category"), encoding="utf-8")
     for status in statuses:
         chosen = [meta for meta in metadata if meta["status"] == status]
-        (output / "statuses" / f"{slug(status)}.html").write_text(
-            page_group(status, chosen, kind="status"), encoding="utf-8")
+        destination = output / "statuses" / f"{slug(status)}.html"
+        safe_generated_target(output, destination)
+        destination.write_text(page_group(status, chosen, kind="status"), encoding="utf-8")
     for _, meta, body in documents:
-        (output / location(meta)).write_text(page_document(meta, body), encoding="utf-8")
+        destination = output / location(meta)
+        safe_generated_target(output, destination)
+        destination.write_text(page_document(meta, body), encoding="utf-8")
     records = [
         dict(number=int(meta["sip"]), title=meta["title"], description=meta["description"],
              author=meta["author"], status=meta["status"], type=meta["type"],
              category=label(meta), created=meta["created"], path=location(meta))
         for meta in sorted(metadata, key=lambda m: int(m["sip"]))
     ]
-    (output / "search.json").write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (output / "feed.xml").write_text(feed_xml(metadata), encoding="utf-8")
+    for relative, content in (
+        ("search.json", json.dumps(records, ensure_ascii=False, indent=2) + "\n"),
+        ("feed.xml", feed_xml(metadata)),
+    ):
+        destination = output / relative
+        safe_generated_target(output, destination)
+        destination.write_text(content, encoding="utf-8")
 
 
 class LocalLinks(HTMLParser):
