@@ -381,7 +381,7 @@ class SiteTests(unittest.TestCase):
         target = self.output / "index.html"
         target.unlink()
         target.symlink_to(victim)
-        with self.assertRaisesRegex(SiteError, "destination must not be a symlink"):
+        with self.assertRaisesRegex(SiteError, "output escapes its destination"):
             generate(ROOT, self.output, self.documents, self.statuses)
         self.assertEqual(victim.read_text(encoding="utf-8"), "protected Sila document")
 
