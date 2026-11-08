@@ -698,6 +698,70 @@ class NativeSpecTests(unittest.TestCase):
             '{"arbitrary":true}', label="json"))
         self.assertEqual(len(validate_repository(self.root)), 2)
 
+    def test_csl_rejects_unhashable_type_instead_of_crashing(self):
+        self.create(body=self.citation_body(
+            '{"type":[],"id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("valid independent CSL type")
+
+    def test_csl_rejects_boolean_identifier(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":true,"DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("valid identifier")
+
+    def test_csl_rejects_nonfinite_identifier(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":NaN,"DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("invalid Sila citation JSON")
+
+    def test_csl_rejects_infinite_exponent_identifier(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":1e999,"DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("valid identifier")
+
+    def test_csl_rejects_invalid_url_port(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org:bad/rfc/rfc2119"}'))
+        self.fails("safe HTTPS")
+
+    def test_csl_rejects_credentials_in_citation_url(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://someone:secret@www.rfc-editor.org/rfc/rfc2119"}'))
+        self.fails("safe HTTPS")
+
+    def test_csl_accepts_valid_independent_name_variables(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"author":[{"literal":"Sila Network","parse-names":false}]}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_csl_rejects_unknown_name_variables(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"author":[{"unverified":"Unknown"}]}'))
+        self.fails("citation author data")
+
+    def test_csl_rejects_invalid_additional_url_port(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"custom":{"additional-urls":["https://www.rfc-editor.org:bad/rfc/rfc2119"]}}'))
+        self.fails("additional URLs")
+
+    def test_csl_accepts_valid_additional_url(self):
+        self.create(body=self.citation_body(
+            '{"type":"webpage","id":"test","DOI":"10.1000/test",'
+            '"URL":"https://www.rfc-editor.org/rfc/rfc2119",'
+            '"custom":{"additional-urls":["https://www.rfc-editor.org/rfc/rfc8446"]}}'))
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 

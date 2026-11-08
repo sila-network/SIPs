@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 import json
+import math
 import re
 import tomllib
 from urllib.parse import urlsplit, unquote
@@ -201,6 +202,29 @@ def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
     return headings, links, "\n".join(visible)
 
 
+CSL_NAME_STRING = frozenset((
+    "family", "given", "dropping-particle", "non-dropping-particle",
+    "suffix", "literal",
+))
+CSL_NAME_FLEX = frozenset(("comma-suffix", "static-ordering", "parse-names"))
+
+
+def safe_citation_url(value: object) -> bool:
+    """Accept only syntactically safe HTTPS addresses without credentials."""
+    if (not isinstance(value, str) or not value.strip()
+            or any(character.isspace() or character == "\\" for character in value)):
+        return False
+    try:
+        parsed = urlsplit(value)
+        return (
+            parsed.scheme == "https" and bool(parsed.hostname)
+            and not parsed.username and not parsed.password
+            and parsed.port in (None, 443)
+        )
+    except ValueError:
+        return False
+
+
 def check_citation_json(path: Path, source: str) -> None:
     """Validate the essential independent CSL citation record contract."""
     def unique_object(pairs: list[tuple[str, object]]) -> dict:
@@ -211,37 +235,46 @@ def check_citation_json(path: Path, source: str) -> None:
             value[key] = item
         return value
 
+    def reject_non_json_number(value: str) -> None:
+        raise ValueError("nonfinite JSON number")
+
     try:
-        record = json.loads(source, object_pairs_hook=unique_object)
+        record = json.loads(
+            source, object_pairs_hook=unique_object,
+            parse_constant=reject_non_json_number,
+        )
     except (ValueError, TypeError) as error:
         reject(path, f"invalid Sila citation JSON: {error}")
     if not isinstance(record, dict):
         reject(path, "Sila citation JSON must contain one object")
-    if record.get("type") not in CSL_TYPES:
+    if (not isinstance(record.get("type"), str)
+            or record["type"] not in CSL_TYPES):
         reject(path, "Sila citation type is not a valid independent CSL type")
     identifier = record.get("id")
     if (type(identifier) not in (str, int, float)
-            or isinstance(identifier, str) and not identifier.strip()):
+            or isinstance(identifier, str) and not identifier.strip()
+            or isinstance(identifier, float) and not math.isfinite(identifier)):
         reject(path, "Sila citation needs a valid identifier")
     if not isinstance(record.get("DOI"), str) or not record["DOI"].strip():
         reject(path, "Sila citation must include a DOI")
     url = record.get("URL")
     if not isinstance(url, str) or not url.strip():
         reject(path, "Sila citation must include a URL")
-    try:
-        parsed = urlsplit(url)
-        if (parsed.scheme != "https" or not parsed.hostname
-                or parsed.username or parsed.password or parsed.port not in (None, 443)):
-            reject(path, "Sila citation URL must use safe HTTPS")
-    except ValueError:
+    if not safe_citation_url(url):
         reject(path, "Sila citation URL must use safe HTTPS")
     if "author" in record:
         authors = record["author"]
-        if (not isinstance(authors, list) or
-                any(not isinstance(author, dict) or not author
-                    or any(not isinstance(value, str) for value in author.values())
-                    for author in authors)):
+        if not isinstance(authors, list):
             reject(path, "invalid independent CSL citation author data")
+        for author in authors:
+            if (not isinstance(author, dict) or not author
+                    or any(
+                        (key in CSL_NAME_STRING and not isinstance(value, str))
+                        or (key in CSL_NAME_FLEX and type(value) not in (str, int, float, bool))
+                        or (key not in CSL_NAME_STRING and key not in CSL_NAME_FLEX)
+                        for key, value in author.items()
+                    )):
+                reject(path, "invalid independent CSL citation author data")
     if "custom" in record:
         custom = record["custom"]
         if not isinstance(custom, dict):
@@ -249,10 +282,7 @@ def check_citation_json(path: Path, source: str) -> None:
         if "additional-urls" in custom:
             urls = custom["additional-urls"]
             if not isinstance(urls, list) or any(
-                not isinstance(item, str) or
-                urlsplit(item).scheme != "https" or
-                not urlsplit(item).hostname
-                for item in urls
+                not safe_citation_url(item) for item in urls
             ):
                 reject(path, "invalid Sila citation additional URLs")
 
