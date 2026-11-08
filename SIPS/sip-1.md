@@ -110,6 +110,11 @@ least as mature as the citing proposal. A Withdrawn proposal is not a
 valid normative dependency or stable reference; illustrative inline
 code does not count as an actual citation.
 
+Sila prose MUST cite numbered proposals as `SIP-N` with a canonical
+positive number. Malformed headings and HTML comments are not allowed in
+normative source text; code samples are distinguished from actual prose.
+Titles and descriptions MUST each have at least two characters.
+
 A metadata key MUST NOT be populated merely to satisfy a validator. A false author, date, discussion link, approval, or implementation reference is a substantive governance error. Dates in example templates are placeholders, never events. Fields not relevant to a proposal SHOULD be absent instead of carrying fictitious values.
 
 ### Document sections and submission contract

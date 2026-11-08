@@ -52,6 +52,13 @@ LINKED_SILA_REFERENCE = re.compile(r"(?<!!)\[(SIP-[1-9][0-9]*)\]\(([^)\s]+)\)")
 FENCE = re.compile(r"^[ \t]{0,3}(\x60{3,}|~{3,})")
 HEADING = re.compile(r"^## ([^\n]+?)[ \t]*$")
 ANCHOR_HEADING = re.compile(r"^#{1,4}[ \t]+(.+?)[ \t]*$")
+BAD_SILA_NUMBER = re.compile(
+    r"(?<![A-Za-z0-9])SIP(?:[ \t]+|[ \t]*-[ \t]+)(?:0|[1-9][0-9]*)\b"
+    r"|(?<![A-Za-z0-9])SIP[0-9]+\b"
+    r"|(?<![A-Za-z0-9])SIP-0[0-9]+\b",
+    re.IGNORECASE,
+)
+MALFORMED_HEADING = re.compile(r"^[ \t]{0,3}#{1,6}(?![ \t#])")
 
 
 def reject(path: Path, reason: str) -> None:
@@ -181,6 +188,20 @@ def visible_markdown(body: str) -> tuple[list[str], list[str], str]:
     return headings, links, "\n".join(visible)
 
 
+def check_markdown_conventions(path: Path, visible: str) -> None:
+    """Check Sila prose without treating code examples as live references."""
+    for line in visible.splitlines():
+        prose = strip_inline_code(line)
+        # Markdown may contain examples of other syntax inside code, but
+        # hidden comments must never suppress real Sila review text.
+        if "<!--" in prose or "-->" in prose:
+            reject(path, "raw HTML comments are not valid Sila specification prose")
+        if MALFORMED_HEADING.match(line):
+            reject(path, "Sila Markdown headings require a space after the marker")
+        if BAD_SILA_NUMBER.search(prose):
+            reject(path, "Sila proposal references must use canonical SIP-N notation")
+
+
 def slug(title: str) -> str:
     """Match the original Sila site renderer for Unicode and punctuation."""
     result = re.sub(r"[^\w -]", "", title.lower()).strip().replace(" ", "-")
@@ -268,6 +289,10 @@ def check_metadata(path: Path, meta: dict[str, str], settings: dict) -> int:
         reject(path, "Sila proposal number differs from filename")
     if len(meta["title"]) > MAX_TITLE or len(meta["description"]) > MAX_DESCRIPTION:
         reject(path, "title or description too long")
+    if len(meta["title"].strip()) < 2 or len(meta["description"].strip()) < 2:
+        reject(path, "title or description is shorter than the required minimum")
+    if BAD_SILA_NUMBER.search(meta["title"] + " " + meta["description"]):
+        reject(path, "Sila metadata references must use canonical SIP-N notation")
     if re.search(r"\bSIP-[1-9][0-9]*\b", meta["title"], re.IGNORECASE):
         reject(path, "title must not repeat the Sila proposal number")
     if ":" in meta["title"] or ":" in meta["description"]:
@@ -405,6 +430,7 @@ def validate_repository(root: Path) -> list[tuple[Path, dict[str, str], str]]:
         raise ProposalError("Sila governance foundation SIP-1 is absent")
     for number, (path, meta, body) in found.items():
         headings, links, visible = visible_markdown(body)
+        check_markdown_conventions(path, visible)
         check_sections(path, headings, visible, meta, settings)
         for required in dependencies[number]:
             if required not in found:

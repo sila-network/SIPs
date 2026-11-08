@@ -560,6 +560,64 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=BODY + "\nThis SIP-2 is only a test candidate.\n")
         self.assertEqual(len(validate_repository(self.root)), 2)
 
+    def test_canonical_sila_prose_reference_accepted(self):
+        self.create(body=BODY + "\nRefer to [SIP-1](sip-1.md#rationale).\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_sila_spaced_reference_denied(self):
+        self.create(body=BODY + "\nThe notation SIP 1 must be refused.\n")
+        self.fails("canonical SIP-N notation")
+
+    def test_sila_joined_reference_denied(self):
+        self.create(body=BODY + "\nThe notation SIP1 must be refused.\n")
+        self.fails("canonical SIP-N notation")
+
+    def test_sila_spaced_dash_reference_denied(self):
+        self.create(body=BODY + "\nThe notation SIP -1 must be refused.\n")
+        self.fails("canonical SIP-N notation")
+
+    def test_sila_leading_zero_reference_denied(self):
+        self.create(body=BODY + "\nThe notation SIP-01 must be refused.\n")
+        self.fails("canonical SIP-N notation")
+
+    def test_sila_malformed_metadata_reference_denied(self):
+        self.create(description="A Sila proposal concerning SIP 1.")
+        self.fails("canonical SIP-N notation")
+
+    def test_code_fence_examples_do_not_require_sila_reference_validation(self):
+        marker = chr(96) * 3
+        self.create(body=BODY + "\n" + marker + "text\nSIP 2\n<!-- code sample -->\n"
+                    + marker + "\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_inline_examples_do_not_require_sila_reference_validation(self):
+        self.create(body=BODY + "\nExample `SIP1` is not a normative reference.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_malformed_subheading_without_space_is_denied(self):
+        self.create(body=BODY + "\n###Invalid heading marker\n")
+        self.fails("headings require a space")
+
+    def test_markdown_subheading_with_space_is_accepted(self):
+        self.create(body=BODY + "\n### Proper Subheading\n\nText.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_html_comment_cannot_hide_specification_content(self):
+        self.create(body=BODY + "\n<!-- concealed Sila text -->\n")
+        self.fails("raw HTML comments")
+
+    def test_escaped_comment_in_code_is_accepted(self):
+        self.create(body=BODY + "\nThe literal `<!-- code -->` is an example.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_short_title_is_denied(self):
+        self.create(title="X")
+        self.fails("required minimum")
+
+    def test_short_description_is_denied(self):
+        self.create(description="X")
+        self.fails("required minimum")
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 
