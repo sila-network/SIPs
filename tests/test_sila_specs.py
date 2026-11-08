@@ -576,6 +576,14 @@ class NativeSpecTests(unittest.TestCase):
         self.create(body=BODY + "\nThe notation SIP -1 must be refused.\n")
         self.fails("canonical SIP-N notation")
 
+    def test_sila_spaced_dash_on_both_sides_reference_denied(self):
+        self.create(body=BODY + "\nThe notation SIP - 1 must be refused.\n")
+        self.fails("canonical SIP-N notation")
+
+    def test_sila_space_after_dash_reference_denied(self):
+        self.create(body=BODY + "\nThe notation SIP- 1 must be refused.\n")
+        self.fails("canonical SIP-N notation")
+
     def test_sila_leading_zero_reference_denied(self):
         self.create(body=BODY + "\nThe notation SIP-01 must be refused.\n")
         self.fails("canonical SIP-N notation")

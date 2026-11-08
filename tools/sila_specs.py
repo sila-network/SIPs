@@ -53,7 +53,7 @@ FENCE = re.compile(r"^[ \t]{0,3}(\x60{3,}|~{3,})")
 HEADING = re.compile(r"^## ([^\n]+?)[ \t]*$")
 ANCHOR_HEADING = re.compile(r"^#{1,4}[ \t]+(.+?)[ \t]*$")
 BAD_SILA_NUMBER = re.compile(
-    r"(?<![A-Za-z0-9])SIP(?:[ \t]+|[ \t]*-[ \t]+)(?:0|[1-9][0-9]*)\b"
+    r"(?<![A-Za-z0-9])SIP(?:[ \t]+(?:-[ \t]*)?|[ \t]*-[ \t]+)(?:0|[1-9][0-9]*)\b"
     r"|(?<![A-Za-z0-9])SIP[0-9]+\b"
     r"|(?<![A-Za-z0-9])SIP-0[0-9]+\b",
     re.IGNORECASE,
