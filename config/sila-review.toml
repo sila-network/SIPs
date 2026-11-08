@@ -1,0 +1,13 @@
+# Original Sila reviewer policy. Sila Network has appointed Jihad Mustafa
+# (GitHub: ahmed202225) for editorial and technical review roles.
+# This appointment is not evidence of an actual independent approval.
+
+[review]
+repository = "sila-network/SIPs"
+spec_roles = ["editor", "technical"]
+code_roles = ["technical"]
+content_roles = ["editor"]
+
+[reviewers]
+editor = ["ahmed202225"]
+technical = ["ahmed202225"]
