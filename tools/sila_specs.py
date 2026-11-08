@@ -423,6 +423,10 @@ def check_markdown_conventions(path: Path, visible: str) -> None:
             reject(path, "Sila Markdown headings require a space after the marker")
         if BAD_SILA_NUMBER.search(prose):
             reject(path, "Sila proposal references must use canonical SIP-N notation")
+        if re.search(r"[\u2018\u2019\u201c\u201d]", prose):
+            reject(path, "Sila normative Markdown must use straight quotation marks")
+        if re.match(r"^[ \t]{0,3}#{5,6}[ \t]", line):
+            reject(path, "Sila renderer supports headings up to four levels")
 
 
 def slug(title: str) -> str:
@@ -596,6 +600,11 @@ def check_sections(path: Path, headings: list[str], body: str, meta: dict, setti
     sequence = [SECTION_ORDER.index(title) for title in headings]
     if sequence != sorted(sequence):
         reject(path, "Sila document sections are out of canonical order")
+    # The preview renderer does not support loose introductory prose before
+    # the first normative section. Reject rather than silently reordering it.
+    first_content = next((line for line in body.splitlines() if line.strip()), "")
+    if first_content.strip() != "## Abstract":
+        reject(path, "Sila normative text must start with the Abstract heading")
 
 
 def check_requires(path: Path, meta: dict) -> list[int]:

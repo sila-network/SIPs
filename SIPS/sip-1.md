@@ -113,6 +113,9 @@ code does not count as an actual citation.
 Sila prose MUST cite numbered proposals as `SIP-N` with a canonical
 positive number. Malformed headings and HTML comments are not allowed in
 normative source text; code samples are distinguished from actual prose.
+A proposal MUST start with the `## Abstract` heading, use only heading
+levels supported by the Sila renderer (one through four), and use straight
+quotation marks in normative prose.
 Titles and descriptions MUST each have at least two characters.
 
 Independent bibliographic citations expressed in a fenced `csl-json`

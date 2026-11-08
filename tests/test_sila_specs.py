@@ -890,6 +890,38 @@ class NativeSpecTests(unittest.TestCase):
             '"URL":"https://www.rfc-editor.org/rfc/rfc2119","categories":[3]}'))
         self.fails("CSL categories")
 
+    def test_smart_double_quotes_in_prose_are_rejected(self):
+        self.create(body=BODY + "\nHere are \u201csmart quotes\u201d outside code.\n")
+        self.fails("straight quotation marks")
+
+    def test_smart_single_quotes_in_prose_are_rejected(self):
+        self.create(body=BODY + "\nHere is a \u2018curly\u2019 quotation.\n")
+        self.fails("straight quotation marks")
+
+    def test_straight_quotes_are_accepted(self):
+        self.create(body=BODY + "\nAn \\"ordinary\\" quoted phrase is valid.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_quoted_code_example_is_not_normative_prose(self):
+        self.create(body=BODY + "\nAn inline `\u201cquoted\u201d` example is valid.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_fifth_level_heading_rejected_without_silent_render_loss(self):
+        self.create(body=BODY + "\n##### Invisible nesting\n")
+        self.fails("headings up to four levels")
+
+    def test_fourth_level_heading_is_supported(self):
+        self.create(body=BODY + "\n#### Supported subheading\n\nText.\n")
+        self.assertEqual(len(validate_repository(self.root)), 2)
+
+    def test_spec_document_must_start_with_abstract(self):
+        self.create(body="Unscoped introductory prose.\n\n" + BODY)
+        self.fails("must start with the Abstract heading")
+
+    def test_spec_document_must_reject_unscoped_heading(self):
+        self.create(body="# Unscoped title\n\n" + BODY)
+        self.fails("must start with the Abstract heading")
+
     def test_current_repository_validates(self):
         self.assertEqual([doc[1]["sip"] for doc in validate_repository(ROOT)], ["1"])
 
